@@ -9,6 +9,9 @@
 
 using namespace std;
 
+#define STATUS_REPORT_INTERVAL 3.0
+#define GLOAL_TIMEOUT 30.0
+
 float map_resolution = 0;
 geometry_msgs::TransformStamped map_transform;
 
@@ -35,6 +38,18 @@ void mapCallback(const nav_msgs::OccupancyGridConstPtr &msg_map)
   map_transform.transform.rotation = msg_map->info.origin.orientation;
 
   return;
+}
+
+void reportProgress(MoveBaseClient &ac)
+{
+  int time_taken = 0;
+  // Wait for goal to complete
+  while (ros::ok() && time_taken < GLOAL_TIMEOUT &&
+         !ac.waitForResult(ros::Duration(STATUS_REPORT_INTERVAL)))
+  {
+    time_taken += STATUS_REPORT_INTERVAL;
+    ROS_INFO("Waiting for the robot to move to goal.");
+  }
 }
 
 int main(int argc, char **argv)
@@ -68,7 +83,8 @@ int main(int argc, char **argv)
     ROS_INFO("Moving to (x: %f, y: %f).", map_goals[i][0], map_goals[i][1]);
 
     ac.sendGoal(map_goal);
-    ac.waitForResult();
+
+    reportProgress(ac);
 
     if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
       ROS_INFO("Robot moved to (x: %f, y: %f).", map_goals[i][0], map_goals[i][1]);
