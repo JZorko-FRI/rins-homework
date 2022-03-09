@@ -5,6 +5,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <move_base_msgs/MoveBaseAction.h>
+#include <actionlib_msgs/GoalStatusArray.h>
 #include <actionlib/client/simple_action_client.h>
 
 using namespace std;
@@ -13,6 +14,7 @@ using namespace std;
 #define GLOAL_TIMEOUT 30.0
 
 float map_resolution = 0;
+bool moving = false;
 geometry_msgs::TransformStamped map_transform;
 
 // http://wiki.ros.org/navigation/Tutorials/SendingSimpleGoals
@@ -40,15 +42,11 @@ void mapCallback(const nav_msgs::OccupancyGridConstPtr &msg_map)
   return;
 }
 
-void reportProgress(MoveBaseClient &ac)
+void statusCallback(const actionlib_msgs::GoalStatusArray &goal_status)
 {
-  int time_taken = 0;
-  // Wait for goal to complete
-  while (ros::ok() && time_taken < GLOAL_TIMEOUT &&
-         !ac.waitForResult(ros::Duration(STATUS_REPORT_INTERVAL)))
+  if (goal_status.header.seq % 10 == 0 && moving)
   {
-    time_taken += STATUS_REPORT_INTERVAL;
-    ROS_INFO("Waiting for the robot to move to goal.");
+    ROS_INFO("%s", (char*)&goal_status.status_list[0].text);
   }
 }
 
@@ -58,7 +56,8 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "homework3_map_goals");
   ros::NodeHandle node_handle;
 
-  ros::Subscriber subscriber = node_handle.subscribe("map", 10, &mapCallback);
+  ros::Subscriber map_subscriber = node_handle.subscribe("map", 10, &mapCallback);
+  ros::Subscriber goal_subscriber = node_handle.subscribe("/move_base/status", 10, &statusCallback);
 
   MoveBaseClient ac("move_base", true);
 
@@ -84,7 +83,9 @@ int main(int argc, char **argv)
 
     ac.sendGoal(map_goal);
 
-    reportProgress(ac);
+    moving = true;
+    ac.waitForResult();
+    moving = false;
 
     if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
       ROS_INFO("Robot moved to (x: %f, y: %f).", map_goals[i][0], map_goals[i][1]);
