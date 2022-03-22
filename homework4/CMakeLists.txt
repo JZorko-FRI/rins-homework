@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(homework4)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -21,6 +21,15 @@ catkin_package()
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 add_executable(homework4_map_goals src/map_goals.cpp)
+
+catkin_install_python(PROGRAMS
+    scripts/breadcrumbs.py
+    scripts/face_localizer_dlib.py
+    scripts/face_localizer_dnn.py
+    scripts/face_localizer_haar.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 target_link_libraries(homework4_map_goals ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 #include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
