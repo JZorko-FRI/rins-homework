@@ -3,10 +3,12 @@ project(homework4)
 
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
+	rospy
 	cv_bridge
+	tf2_ros
+
 	sensor_msgs
 	visualization_msgs
-	tf2_ros
 	nav_msgs
 	std_msgs
 	geometry_msgs
@@ -15,6 +17,11 @@ find_package(catkin REQUIRED COMPONENTS
 find_package( OpenCV REQUIRED )
 
 catkin_package()
+
+include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+
+add_executable(homework4_map_goals src/map_goals.cpp)
+target_link_libraries(homework4_map_goals ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 #include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 #add_executable(map_goals src/map_goals.cpp)

@@ -4,20 +4,26 @@
   <version>0.0.0</version>
   <description>The homework4 package</description>
 
-  <maintainer email="matejd@todo.todo">matejd</maintainer>
+  <maintainer email="rm6551@student.uni-lj.si">mokot</maintainer>
 
   <license>BSD</license>
 
   <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>tf</build_depend>
 
   <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
   <run_depend>cv_bridge</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>tf2</run_depend>
   <run_depend>tf2_ros</run_depend>
   <run_depend>visualization_msgs</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
+  <run_depend>gazebo_ros</run_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 

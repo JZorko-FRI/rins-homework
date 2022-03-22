@@ -9,6 +9,7 @@ import tf2_geometry_msgs
 import tf2_ros
 
 import message_filters
+import actionlib
 
 from os.path import dirname, join
 from sound_play.msg import SoundRequest  
@@ -20,6 +21,7 @@ from geometry_msgs.msg import PointStamped, Vector3, Pose
 from cv_bridge import CvBridge, CvBridgeError
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import ColorRGBA
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 
 class face_localizer:
@@ -56,6 +58,15 @@ class face_localizer:
         
         # Initialize sound handler
         self.soundhandle = SoundClient()
+
+        # Initialize action client
+        self.ac = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+        self.ac.wait_for_server()
+
+        # Variable that tells us which phase we are currently in - searching for face or confirming
+        self.confirming = False
+        self.confirming_rep = 0
+        self.pose_array = []
   
         rospy.sleep(1)
     
@@ -111,6 +122,9 @@ class face_localizer:
     def find_faces(self):
         print('I got a new image!')
 
+        if self.confirming:
+            self.confirming_rep += 1
+
         # Get the next rgb and depth images that are posted from the camera
         # We don't need a subscriber, we can just wait for the message.
         try:
@@ -161,7 +175,6 @@ class face_localizer:
         for i in range(0, face_detections.shape[2]):
             confidence = face_detections[0, 0, i, 2] # the network's confidence that this is a correct detection
             if confidence>0.5: # we believe that this is a face
-                
                 box = face_detections[0,0,i,3:7] * np.array([w,h,w,h]) # scale back the original size
                 box = box.astype('int')
                 x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
@@ -184,43 +197,71 @@ class face_localizer:
                 # Find the location of the detected face
                 # Position of the face, distance to the face, the time at which the image was taken
                 pose = self.get_pose((x1,x2,y1,y2), face_distance, depth_time)
-                
+
+                # Tells us if a face has already been recognized at this location
                 recognized = False
 
-                if pose is not None and not np.isnan((pose.position.x)) and not np.isnan((pose.position.y)) and not np.isnan((pose.position.z)):
+                if pose is not None and not np.isnan(pose.position.x) and not np.isnan(pose.position.y) and not np.isnan(pose.position.z):
                     # Check if face already detected
                     b = np.array((pose.position.x, pose.position.y, pose.position.z))
                     for marker in self.marker_array.markers:
                         a = np.array((marker.pose.position.x, marker.pose.position.y, marker.pose.position.z))
                         # We have recognized this face previously
-                        if np.linalg.norm(a-b) < 1:
-                            recognized = True
-                            marker.pose.position.x = (marker.pose.position.x + pose.position.x) / 2
-                            marker.pose.position.y = (marker.pose.position.y + pose.position.y) / 2
-                            marker.pose.position.z = (marker.pose.position.z + pose.position.z) / 2
-                            
-                            self.markers_pub.publish(self.marker_array)
+                        recognized |= (np.linalg.norm(a-b) < 1)
 
                     if not recognized:
-                        # Greet face
-                        self.soundhandle.say('Hello!')
-                        
-                        # Create a marker used for visualization
-                        self.marker_num += 1
-                        marker = Marker()
-                        marker.header.stamp = rospy.Time(0)
-                        marker.header.frame_id = 'map'
-                        marker.pose = pose
-                        marker.type = Marker.CUBE
-                        marker.action = Marker.ADD
-                        marker.frame_locked = False
-                        marker.lifetime = rospy.Duration.from_sec(10)
-                        marker.id = self.marker_num
-                        marker.scale = Vector3(0.1, 0.1, 0.1)
-                        marker.color = ColorRGBA(0, 1, 0, 1)
-                        self.marker_array.markers.append(marker)
+                        self.confirming = True
+                        self.pose_array.append(pose)
 
-                        self.markers_pub.publish(self.marker_array)
+                        # First detection of a new face
+                        if self.confirming_rep == 1:
+                            # Stop current goal execution (stop moving)
+                            self.ac.cancel_all_goals()
+
+                        # End of detection
+                        if self.confirming_rep == 5:
+                            # Confirm that this is in fact a face
+                            success_num = len(self.pose_array)
+                            if success_num >= 4:
+                                # Greet face
+                                self.soundhandle.say('Hello!')
+
+                                # Calculate mean position of face
+                                mean_pose = Pose()
+                                for pos in self.pose_array:
+                                    mean_pose.position.x += pos.position.x
+                                    mean_pose.position.y += pos.position.y
+                                    mean_pose.position.z += pos.position.z
+
+                                mean_pose.position.x /= success_num
+                                mean_pose.position.y /= success_num
+                                mean_pose.position.z /= success_num
+
+                                # Create a marker used for visualization
+                                self.marker_num += 1
+                                marker = Marker()
+                                marker.header.stamp = rospy.Time(0)
+                                marker.header.frame_id = 'map'
+                                marker.pose = mean_pose
+                                marker.type = Marker.CUBE
+                                marker.action = Marker.ADD
+                                marker.frame_locked = False
+                                marker.lifetime = rospy.Duration.from_sec(10)
+                                marker.id = self.marker_num
+                                marker.scale = Vector3(0.1, 0.1, 0.1)
+                                marker.color = ColorRGBA(0, 1, 0, 1)
+                                self.marker_array.markers.append(marker)
+
+                                self.markers_pub.publish(self.marker_array)
+
+                            # Reset variables
+                            self.confirming = False
+                            self.confirming_rep = 0
+                            self.pose_array = []
+
+                            print(self.marker_array)
+
+
 
     def depth_callback(self,data):
 
