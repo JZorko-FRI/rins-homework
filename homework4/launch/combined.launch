@@ -40,8 +40,8 @@
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
   <!-- Localization -->
-  <arg name="initial_pose_x" default="0.55"/>
-  <arg name="initial_pose_y" default="-1.25"/>
+  <arg name="initial_pose_x" default="0.0"/>
+  <arg name="initial_pose_y" default="0.0"/>
   <arg name="initial_pose_a" default="0.0"/>
   <include file="$(find turtlebot_navigation)/launch/includes/amcl/amcl.launch.xml">
     <arg name="initial_pose_x" value="$(arg initial_pose_x)"/>
