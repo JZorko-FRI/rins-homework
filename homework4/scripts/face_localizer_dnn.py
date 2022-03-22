@@ -259,8 +259,6 @@ class face_localizer:
                             self.confirming_rep = 0
                             self.pose_array = []
 
-                            print(self.marker_array)
-
 
 
     def depth_callback(self,data):
