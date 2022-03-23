@@ -76,8 +76,6 @@ class face_localizer:
         self.confirming_rep = 0
         self.pose_array = []
 
-        rospy.sleep(1)
-
     def get_pose(self, coords, dist, stamp):
         # Calculate the position of the detected face
 
@@ -241,88 +239,48 @@ class face_localizer:
                             # Stop current goal execution (stop moving)
                             self.ac.cancel_all_goals()
 
-                        # End of detection
-                        if self.confirming_rep >= 5:
-                            # Confirm that this is in fact a face
-                            success_num = len(self.pose_array)
-                            if success_num >= 4:
-                                # Greet face
-                                self.soundhandle.say('Hello!')
+            # End of detection
+            if self.confirming_rep >= 5:
+                # Confirm that this is in fact a face
+                success_num = len(self.pose_array)
+                if success_num >= 4:
+                    # Greet face
+                    self.soundhandle.say('Hello!')
 
-                                # Calculate mean position of face
-                                mean_pose = Pose()
-                                for pos in self.pose_array:
-                                    mean_pose.position.x += pos.position.x
-                                    mean_pose.position.y += pos.position.y
-                                    mean_pose.position.z += pos.position.z
+                    # Calculate mean position of face
+                    mean_pose = Pose()
+                    for pos in self.pose_array:
+                        mean_pose.position.x += pos.position.x
+                        mean_pose.position.y += pos.position.y
+                        mean_pose.position.z += pos.position.z
 
-                                mean_pose.position.x /= success_num
-                                mean_pose.position.y /= success_num
-                                mean_pose.position.z /= success_num
+                    mean_pose.position.x /= success_num
+                    mean_pose.position.y /= success_num
+                    mean_pose.position.z /= success_num
 
-                                # Create a marker used for visualization
-                                self.marker_num += 1
-                                marker = Marker()
-                                marker.header.stamp = rospy.Time(0)
-                                marker.header.frame_id = 'map'
-                                marker.pose = mean_pose
-                                marker.type = Marker.CUBE
-                                marker.action = Marker.ADD
-                                marker.frame_locked = False
-                                marker.lifetime = rospy.Duration.from_sec(100)
-                                marker.id = self.marker_num
-                                marker.scale = Vector3(0.1, 0.1, 0.1)
-                                marker.color = ColorRGBA(0, 1, 0, 1)
-                                self.marker_array.markers.append(marker)
+                    # Create a marker used for visualization
+                    self.marker_num += 1
+                    marker = Marker()
+                    marker.header.stamp = rospy.Time(0)
+                    marker.header.frame_id = 'map'
+                    marker.pose = mean_pose
+                    marker.type = Marker.CUBE
+                    marker.action = Marker.ADD
+                    marker.frame_locked = False
+                    marker.lifetime = rospy.Duration.from_sec(100)
+                    marker.id = self.marker_num
+                    marker.scale = Vector3(0.1, 0.1, 0.1)
+                    marker.color = ColorRGBA(0, 1, 0, 1)
+                    self.marker_array.markers.append(marker)
 
-                                print(self.marker_array)
+                    print(self.marker_array)
 
-                                self.markers_pub.publish(self.marker_array)
+                    self.markers_pub.publish(self.marker_array)
 
-                            # Reset variables
-                            self.confirming = False
-                            self.confirming_rep = 0
-                            self.pose_array = []
-            # # End of detection
-            # if self.confirming_rep == 5:
-            #     # Confirm that this is in fact a face
-            #     success_num = len(self.pose_array)
-            #     if success_num >= 4:
-            #         # Greet face
-            #         self.soundhandle.say('Hello!')
-
-            #         # Calculate mean position of face
-            #         mean_pose = Pose()
-            #         for pos in self.pose_array:
-            #             mean_pose.position.x += pos.position.x
-            #             mean_pose.position.y += pos.position.y
-            #             mean_pose.position.z += pos.position.z
-
-            #         mean_pose.position.x /= success_num
-            #         mean_pose.position.y /= success_num
-            #         mean_pose.position.z /= success_num
-
-            #         # Create a marker used for visualization
-            #         self.marker_num += 1
-            #         marker = Marker()
-            #         marker.header.stamp = rospy.Time(0)
-            #         marker.header.frame_id = 'map'
-            #         marker.pose = mean_pose
-            #         marker.type = Marker.CUBE
-            #         marker.action = Marker.ADD
-            #         marker.frame_locked = False
-            #         marker.lifetime = rospy.Duration.from_sec(10)
-            #         marker.id = self.marker_num
-            #         marker.scale = Vector3(0.1, 0.1, 0.1)
-            #         marker.color = ColorRGBA(0, 1, 0, 1)
-            #         self.marker_array.markers.append(marker)
-
-            #         self.markers_pub.publish(self.marker_array)
-
-            #     # Reset variables
-            #     self.confirming = False
-            #     self.confirming_rep = 0
-            #     self.pose_array = []
+                # Reset variables
+                self.confirming = False
+                self.confirming_rep = 0
+                self.pose_array = []
 
     def depth_callback(self, data):
 
