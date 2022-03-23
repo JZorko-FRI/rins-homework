@@ -58,7 +58,7 @@ class face_localizer:
         # Publisher for the visualization markers
         self.markers_pub = rospy.Publisher('face_markers',
                                            MarkerArray,
-                                           queue_size=1000)
+                                           queue_size=100)
 
         # Object we use for transforming between coordinate frames
         self.tf_buf = tf2_ros.Buffer()
@@ -128,7 +128,7 @@ class face_localizer:
         return pose
 
     def find_faces(self):
-        print('I got a new image!')
+        # print('I got a new image!')
 
         if self.confirming:
             self.confirming_rep += 1
@@ -237,12 +237,12 @@ class face_localizer:
                         self.pose_array.append(pose)
 
                         # First detection of a new face
-                        if self.confirming_rep == 1:
+                        if self.confirming_rep > 0:
                             # Stop current goal execution (stop moving)
                             self.ac.cancel_all_goals()
 
                         # End of detection
-                        if self.confirming_rep == 5:
+                        if self.confirming_rep >= 5:
                             # Confirm that this is in fact a face
                             success_num = len(self.pose_array)
                             if success_num >= 4:
@@ -269,11 +269,13 @@ class face_localizer:
                                 marker.type = Marker.CUBE
                                 marker.action = Marker.ADD
                                 marker.frame_locked = False
-                                marker.lifetime = rospy.Duration.from_sec(10)
+                                marker.lifetime = rospy.Duration.from_sec(100)
                                 marker.id = self.marker_num
                                 marker.scale = Vector3(0.1, 0.1, 0.1)
                                 marker.color = ColorRGBA(0, 1, 0, 1)
                                 self.marker_array.markers.append(marker)
+
+                                print(self.marker_array)
 
                                 self.markers_pub.publish(self.marker_array)
 
