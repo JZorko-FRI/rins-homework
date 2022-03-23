@@ -67,7 +67,33 @@ int main(int argc, char **argv)
   }
 
   // 5 goal locations on the map
-  float map_goals[5][2] = {{2.65, -1.10}, {0.55, -1.25}, {1.05, 1.40}, {-2.90, 0.90}, {0.95, -2.20}};
+  // const float map_goals[5][2] = {{2.65, -1.10}, {0.55, -1.25}, {1.05, 1.40}, {-2.90, 0.90}, {0.95, -2.20}};
+  const float map_goals[26][2] = {{-0.60, -1.80},
+                                  {-0.25, -2.60},
+                                  {0.85, -2.10},
+                                  {1.90, -2.15},
+                                  {2.95, -1.35},
+                                  {3.00, -1.10},
+                                  {2.55, -0.90},
+                                  {1.60, -1.20},
+                                  {0.45, -1.10},
+                                  {1.50, 0.15},
+                                  {1.10, 1.45},
+                                  {-0.05, 1.40},
+                                  {0.00, 0.50},
+                                  {0.95, -0.35},
+                                  {1.00, 0.95},
+                                  {-1.50, 1.05},
+                                  {-1.95, 0.15},
+                                  {-2.80, 0.80},
+                                  {-2.55, -0.20},
+                                  {-1.55, 0.10},
+                                  {-1.70, -0.80},
+                                  {-0.60, -0.70},
+                                  {-1.90, -1.80},
+                                  {-2.20, -1.70},
+                                  {-0.40, -1.55},
+                                  {1.00, -2.50}};
 
   // Move robot to every location
   int i = 0;
@@ -87,25 +113,25 @@ int main(int argc, char **argv)
     moving = true;
     ac.waitForResult();
     moving = false;
-	
-	actionlib::SimpleClientGoalState goal_state = ac.getState();
 
-    if (goal_state == actionlib::SimpleClientGoalState::SUCCEEDED) 
-	{
+    actionlib::SimpleClientGoalState goal_state = ac.getState();
+
+    if (goal_state == actionlib::SimpleClientGoalState::SUCCEEDED)
+    {
       ROS_INFO("Robot moved to (x: %f, y: %f).", map_goals[i][0], map_goals[i][1]);
-	  i++;
-	}
-	else if (goal_state == actionlib::SimpleClientGoalState::RECALLED || goal_state == actionlib::SimpleClientGoalState::PREEMPTED)
-	{
-	  ROS_INFO("Face has been detected. Waiting for confirmation.");
+      i++;
+    }
+    else if (goal_state == actionlib::SimpleClientGoalState::RECALLED || goal_state == actionlib::SimpleClientGoalState::PREEMPTED)
+    {
+      ROS_INFO("Face has been detected. Waiting for confirmation.");
       ros::Duration(5).sleep();
-	}
+    }
     else
-	{
+    {
       ROS_ERROR("The robot failed to move!");
-	  i++;
+      i++;
       // return 1; // Continue ...
-	}
+    }
   }
 
   return 0;

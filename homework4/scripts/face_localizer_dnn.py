@@ -12,7 +12,7 @@ import message_filters
 import actionlib
 
 from os.path import dirname, join
-from sound_play.msg import SoundRequest  
+from sound_play.msg import SoundRequest
 from sound_play.libsoundplay import SoundClient
 
 #import matplotlib.pyplot as plt
@@ -33,10 +33,16 @@ class face_localizer:
 
         # The function for performin HOG face detection
         #self.face_detector = dlib.get_frontal_face_detector()
-        protoPath = join(dirname(__file__), "deploy.prototxt.txt") # Structure of the neural network
-        modelPath = join(dirname(__file__), "res10_300x300_ssd_iter_140000.caffemodel") # Parameters of the network
+        protoPath = join(
+            dirname(__file__),
+            "deploy.prototxt.txt")  # Structure of the neural network
+        modelPath = join(dirname(__file__),
+                         "res10_300x300_ssd_iter_140000.caffemodel"
+                         )  # Parameters of the network
 
-        self.face_net = cv2.dnn.readNetFromCaffe(protoPath, modelPath) # Alternatively: Torch, PyTorch over tensor flow for training
+        self.face_net = cv2.dnn.readNetFromCaffe(
+            protoPath, modelPath
+        )  # Alternatively: Torch, PyTorch over tensor flow for training
 
         # A help variable for holding the dimensions of the image
         self.dims = (0, 0, 0)
@@ -50,12 +56,14 @@ class face_localizer:
         # self.depth_sub = rospy.Subscriber("/camera/depth/image_raw", Image, self.depth_callback)
 
         # Publisher for the visualization markers
-        self.markers_pub = rospy.Publisher('face_markers', MarkerArray, queue_size=1000)
+        self.markers_pub = rospy.Publisher('face_markers',
+                                           MarkerArray,
+                                           queue_size=1000)
 
         # Object we use for transforming between coordinate frames
         self.tf_buf = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buf)
-        
+
         # Initialize sound handler
         self.soundhandle = SoundClient()
 
@@ -67,25 +75,25 @@ class face_localizer:
         self.confirming = False
         self.confirming_rep = 0
         self.pose_array = []
-  
-        rospy.sleep(1)
-    
 
-    def get_pose(self,coords,dist,stamp):
+        rospy.sleep(1)
+
+    def get_pose(self, coords, dist, stamp):
         # Calculate the position of the detected face
 
-        k_f = 554 # kinect focal length in pixels
+        k_f = 554  # kinect focal length in pixels
 
         x1, x2, y1, y2 = coords
 
-        face_x = self.dims[1] / 2 - (x1+x2)/2. # offset from the center of the image
-        face_y = self.dims[0] / 2 - (y1+y2)/2.
+        face_x = self.dims[1] / 2 - (
+            x1 + x2) / 2.  # offset from the center of the image
+        face_y = self.dims[0] / 2 - (y1 + y2) / 2.
 
         # in pixels
-        angle_to_target = np.arctan2(face_x,k_f) 
+        angle_to_target = np.arctan2(face_x, k_f)
 
         # Get the angles in the base_link relative coordinate system
-        x, y = dist*np.cos(angle_to_target), dist*np.sin(angle_to_target)
+        x, y = dist * np.cos(angle_to_target), dist * np.sin(angle_to_target)
 
         ### Define a stamped message for transformation - directly in "base_link"
         #point_s = PointStamped()
@@ -105,7 +113,8 @@ class face_localizer:
 
         # Get the point in the "map" coordinate system
         try:
-            point_world = self.tf_buf.transform(point_s, "map") # Transform this point in this system "map"
+            point_world = self.tf_buf.transform(
+                point_s, "map")  # Transform this point in this system "map"
 
             # Create a Pose object with the same position
             pose = Pose()
@@ -117,7 +126,6 @@ class face_localizer:
             pose = None
 
         return pose
-    
 
     def find_faces(self):
         print('I got a new image!')
@@ -128,28 +136,31 @@ class face_localizer:
         # Get the next rgb and depth images that are posted from the camera
         # We don't need a subscriber, we can just wait for the message.
         try:
-            rgb_image_message = rospy.wait_for_message("/camera/rgb/image_raw", Image)
+            rgb_image_message = rospy.wait_for_message("/camera/rgb/image_raw",
+                                                       Image)
         except Exception as e:
             print(e)
             return 0
 
         try:
-            depth_image_message = rospy.wait_for_message("/camera/depth/image_raw", Image)
+            depth_image_message = rospy.wait_for_message(
+                "/camera/depth/image_raw", Image)
         except Exception as e:
             print(e)
             return 0
-            
-        
 
         # Convert the images into a OpenCV (numpy) format (also numpy)
 
         try:
-            rgb_image = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8") # bgr8 - how many channels, how many bits per channel
+            rgb_image = self.bridge.imgmsg_to_cv2(
+                rgb_image_message,
+                "bgr8")  # bgr8 - how many channels, how many bits per channel
         except CvBridgeError as e:
             print(e)
 
         try:
-            depth_image = self.bridge.imgmsg_to_cv2(depth_image_message, "32FC1") # 32-bit floating point
+            depth_image = self.bridge.imgmsg_to_cv2(
+                depth_image_message, "32FC1")  # 32-bit floating point
         except CvBridgeError as e:
             print(e)
 
@@ -168,14 +179,19 @@ class face_localizer:
         #face_rectangles = self.face_detector(rgb_image, 0)
         # NN needs this kind of input (blob)
         # Resize to 300x300 pixels for NN, others are blob parameters
-        blob = cv2.dnn.blobFromImage(cv2.resize(rgb_image, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
+        blob = cv2.dnn.blobFromImage(cv2.resize(rgb_image, (300, 300)), 1.0,
+                                     (300, 300), (104.0, 177.0, 123.0))
         self.face_net.setInput(blob)
-        face_detections = self.face_net.forward() # Forward pass in the network
+        face_detections = self.face_net.forward(
+        )  # Forward pass in the network
 
         for i in range(0, face_detections.shape[2]):
-            confidence = face_detections[0, 0, i, 2] # the network's confidence that this is a correct detection
-            if confidence>0.5: # we believe that this is a face
-                box = face_detections[0,0,i,3:7] * np.array([w,h,w,h]) # scale back the original size
+            confidence = face_detections[
+                0, 0, i,
+                2]  # the network's confidence that this is a correct detection
+            if confidence > 0.5:  # we believe that this is a face
+                box = face_detections[0, 0, i, 3:7] * np.array(
+                    [w, h, w, h])  # scale back the original size
                 box = box.astype('int')
                 x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
 
@@ -187,7 +203,8 @@ class face_localizer:
                 #cv2.waitKey(1)
 
                 # Find the distance to the detected face
-                face_distance = float(np.nanmean(depth_image[y1:y2,x1:x2])) # ignore the nan values
+                face_distance = float(np.nanmean(
+                    depth_image[y1:y2, x1:x2]))  # ignore the nan values
 
                 print('Distance to face', face_distance)
 
@@ -196,18 +213,24 @@ class face_localizer:
 
                 # Find the location of the detected face
                 # Position of the face, distance to the face, the time at which the image was taken
-                pose = self.get_pose((x1,x2,y1,y2), face_distance, depth_time)
+                pose = self.get_pose((x1, x2, y1, y2), face_distance,
+                                     depth_time)
 
                 # Tells us if a face has already been recognized at this location
                 recognized = False
 
-                if pose is not None and not np.isnan(pose.position.x) and not np.isnan(pose.position.y) and not np.isnan(pose.position.z):
+                if pose is not None and not np.isnan(
+                        pose.position.x) and not np.isnan(
+                            pose.position.y) and not np.isnan(pose.position.z):
                     # Check if face already detected
-                    b = np.array((pose.position.x, pose.position.y, pose.position.z))
+                    b = np.array(
+                        (pose.position.x, pose.position.y, pose.position.z))
                     for marker in self.marker_array.markers:
-                        a = np.array((marker.pose.position.x, marker.pose.position.y, marker.pose.position.z))
+                        a = np.array(
+                            (marker.pose.position.x, marker.pose.position.y,
+                             marker.pose.position.z))
                         # We have recognized this face previously
-                        recognized |= (np.linalg.norm(a-b) < 1)
+                        recognized |= (np.linalg.norm(a - b) < 1)
 
                     if not recognized:
                         self.confirming = True
@@ -259,9 +282,7 @@ class face_localizer:
                             self.confirming_rep = 0
                             self.pose_array = []
 
-
-
-    def depth_callback(self,data):
+    def depth_callback(self, data):
 
         try:
             depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
@@ -269,10 +290,10 @@ class face_localizer:
             print(e)
 
         # Do the necessairy conversion so we can visuzalize it in OpenCV
-        
+
         image_1 = depth_image / np.nanmax(depth_image)
-        image_1 = image_1*255
-        
+        image_1 = image_1 * 255
+
         image_viz = np.array(image_1, dtype=np.uint8)
 
         #cv2.imshow("Depth window", image_viz)
@@ -281,16 +302,17 @@ class face_localizer:
         #plt.imshow(depth_image)
         #plt.show()
 
+
 def main():
 
-        face_finder = face_localizer()
+    face_finder = face_localizer()
 
-        rate = rospy.Rate(1)
-        while not rospy.is_shutdown():
-            face_finder.find_faces()
-            rate.sleep()
+    rate = rospy.Rate(1)
+    while not rospy.is_shutdown():
+        face_finder.find_faces()
+        rate.sleep()
 
-        cv2.destroyAllWindows()
+    cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
