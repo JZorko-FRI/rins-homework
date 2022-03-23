@@ -46,7 +46,7 @@ void statusCallback(const actionlib_msgs::GoalStatusArray &goal_status)
 {
   if (goal_status.header.seq % 10 == 0 && moving)
   {
-    ROS_INFO("%s", (char *)&goal_status.status_list[0].text);
+    ROS_INFO("%s", (char*)&goal_status.status_list[0].text);
   }
 }
 
