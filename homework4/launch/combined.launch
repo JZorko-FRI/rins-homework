@@ -61,4 +61,7 @@
 
   <!-- Map config -->
   <rosparam file="$(find homework4)/config.yaml"/>
+
+  <!-- Sound -->
+  <node name="soundplay_node" pkg="sound_play" type="soundplay_node.py"/>
 </launch>

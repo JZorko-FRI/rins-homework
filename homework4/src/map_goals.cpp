@@ -8,6 +8,9 @@
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <actionlib/client/simple_action_client.h>
 
+#include <sound_play/sound_play.h>
+#include <unistd.h>
+
 using namespace std;
 
 #define STATUS_REPORT_INTERVAL 3.0
@@ -16,6 +19,12 @@ using namespace std;
 float map_resolution = 0;
 bool moving = false;
 geometry_msgs::TransformStamped map_transform;
+
+void sleepok(int t, ros::NodeHandle &nh)
+{
+  if (nh.ok())
+    sleep(t);
+}
 
 // http://wiki.ros.org/navigation/Tutorials/SendingSimpleGoals
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
@@ -46,7 +55,7 @@ void statusCallback(const actionlib_msgs::GoalStatusArray &goal_status)
 {
   if (goal_status.header.seq % 10 == 0 && moving)
   {
-    ROS_INFO("%s", (char*)&goal_status.status_list[0].text);
+    ROS_INFO("%s", (char *)&goal_status.status_list[0].text);
   }
 }
 
@@ -58,6 +67,8 @@ int main(int argc, char **argv)
 
   ros::Subscriber map_subscriber = node_handle.subscribe("map", 10, &mapCallback);
   ros::Subscriber goal_subscriber = node_handle.subscribe("/move_base/status", 10, &statusCallback);
+
+  sound_play::SoundClient sound_client;
 
   MoveBaseClient ac("move_base", true);
 
@@ -133,6 +144,10 @@ int main(int argc, char **argv)
       // return 1; // Continue ...
     }
   }
+
+  // At the end play star wars (TODO: spremeni pot do datoteke)
+  sound_client.playWave("/home/mokot/FRI/RazvojInteligentnihSistemov/ROS/src/homework4/sounds/star-wars-theme-song.wav");
+  sleepok(30, node_handle);
 
   return 0;
 }
