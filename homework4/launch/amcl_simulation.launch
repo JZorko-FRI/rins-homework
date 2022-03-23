@@ -1,5 +1,4 @@
 <launch>
-
   <!-- Map server -->
   <arg name="map_file" default="$(find homework4)/maps/map.yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
@@ -16,4 +15,8 @@
 
   <!-- Move base -->
   <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot_rviz_launchers)/rviz/navigation.rviz"/>
+
+  <!-- Map config -->
+  <rosparam file="$(find homework4)/config.yaml"/>
 </launch>

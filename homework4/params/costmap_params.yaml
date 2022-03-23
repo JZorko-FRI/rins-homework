@@ -1,5 +1,0 @@
-# Seems to override parameters listed on startup but does not effect the map display?
-inflation_layer:
-  enabled:              true
-  cost_scaling_factor:  25.0  # exponential rate at which the obstacle cost drops off (default: 10)
-  inflation_radius:     0.1  # max. distance from an obstacle at which costs are incurred for planning paths.
