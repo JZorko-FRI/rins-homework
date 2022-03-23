@@ -234,10 +234,12 @@ class face_localizer:
                         self.confirming = True
                         self.pose_array.append(pose)
 
+
                         # First detection of a new face
                         if self.confirming_rep >= 0:
                             # Stop current goal execution (stop moving)
                             self.ac.cancel_all_goals()
+
 
             # End of detection
             if self.confirming_rep >= 5:
@@ -281,6 +283,7 @@ class face_localizer:
                 self.confirming = False
                 self.confirming_rep = 0
                 self.pose_array = []
+
 
     def depth_callback(self, data):
 
