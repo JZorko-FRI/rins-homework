@@ -55,6 +55,8 @@ class face_localizer:
     def __init__(self):
         rospy.init_node('face_localizer', anonymous=True)
 
+        self.sounds_dir = rospy.get_param('/sound_play/sounds_dir', './')
+
         # An object we use for converting images between ROS format and OpenCV format
         self.bridge = CvBridge()
 
@@ -259,7 +261,7 @@ class face_localizer:
 
                         # "Greet" the face
                         self.soundhandle.playWave(
-                            "../sounds/hey-baby.wav"
+                            self.sounds_dir + "hey-baby.wav"
                         )
 
     def depth_callback(self, data):
