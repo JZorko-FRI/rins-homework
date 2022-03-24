@@ -6,7 +6,7 @@
     <include file="$(find task1)/launch/amcl_simulation.launch"/>
 
     <!-- Face detection -->
-    <node name="face_detection" pkg="task1" type="face_localizer_haar.py" output="screen"/>
+    <node name="face_detection" pkg="task1" type="face_localizer.py" output="screen"/>
 
     <!-- Movement -->
     <node name="map_goals" pkg="task1" type="task1_map_goals" output="screen"/>

@@ -23,10 +23,7 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 add_executable(task1_map_goals src/map_goals.cpp)
 
 catkin_install_python(PROGRAMS
-    scripts/breadcrumbs.py
-    scripts/face_localizer_dlib.py
-    scripts/face_localizer_dnn.py
-    scripts/face_localizer_haar.py
+    scripts/face_localizer.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

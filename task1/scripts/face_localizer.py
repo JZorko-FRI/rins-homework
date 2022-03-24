@@ -206,8 +206,8 @@ class face_localizer:
                 face_region = rgb_image[y1:y2, x1:x2]
 
                 # Visualize the extracted face
-                #cv2.imshow("ImWindow", face_region)
-                #cv2.waitKey(1)
+                cv2.imshow("ImWindow", face_region)
+                cv2.waitKey(10)
 
                 # Find the distance to the detected face
                 face_distance = float(np.nanmean(depth_image[y1:y2, x1:x2]))
@@ -226,7 +226,6 @@ class face_localizer:
                     if detected(pose, self.pose_array):
                         # Add pose to detected poses
                         self.pose_array.append(pose)
-                        print("::: pose ::: ", pose)
 
                         # Create a marker used for visualization
                         self.marker_num += 1
@@ -260,9 +259,8 @@ class face_localizer:
                         self.ac.wait_for_result(rospy.Duration(3))
 
                         # "Greet" the face
-                        self.soundhandle.playWave(
-                            self.sounds_dir + "hey-baby.wav"
-                        )
+                        self.soundhandle.playWave(self.sounds_dir +
+                                                  "hey-baby.wav")
 
     def depth_callback(self, data):
 

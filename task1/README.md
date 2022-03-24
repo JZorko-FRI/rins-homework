@@ -1,6 +1,6 @@
 ### Homework 4 - Usage instructions
 
-To run amcl_simulation, gmapping_simulation, rins_world and face_localizer_dnn at the same time:
+To run amcl_simulation, gmapping_simulation, rins_world and face_localizer at the same time:
 
 `roslaunch task1 combined.launch`
 
