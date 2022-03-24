@@ -187,7 +187,10 @@ class face_localizer:
             confidence = face_detections[
                 0, 0, i,
                 2]  # the network's confidence that this is a correct detection
-            if confidence > 0.5:  # we believe that this is a face
+            # TODO tune condifence tresholds, have separate tresholds for stopping and detecting
+            # if confidence > 0.1:
+            #     print('Confidence:', confidence)
+            if confidence > 0.6:  # we believe that this is a face
                 box = face_detections[0, 0, i, 3:7] * np.array(
                     [w, h, w, h])  # scale back the original size
                 box = box.astype('int')
