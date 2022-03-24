@@ -58,7 +58,7 @@ class face_localizer:
         # Publisher for the visualization markers
         self.markers_pub = rospy.Publisher('face_markers',
                                            MarkerArray,
-                                           queue_size=100)
+                                           queue_size=1000)
 
         # Object we use for transforming between coordinate frames
         self.tf_buf = tf2_ros.Buffer()
@@ -126,7 +126,7 @@ class face_localizer:
         return pose
 
     def find_faces(self):
-        # print('I got a new image!')
+        print('I got a new image!')
 
         if self.confirming:
             self.confirming_rep += 1
@@ -174,7 +174,7 @@ class face_localizer:
         #img = cv2.equalizeHist(gray)
 
         # Detect the faces in the image
-        #face_rectangles = self.face_detector(rgb_image, 0)
+        # face_rectangles = self.face_detector(rgb_image, 0)
         # NN needs this kind of input (blob)
         # Resize to 300x300 pixels for NN, others are blob parameters
         blob = cv2.dnn.blobFromImage(cv2.resize(rgb_image, (300, 300)), 1.0,
@@ -187,10 +187,7 @@ class face_localizer:
             confidence = face_detections[
                 0, 0, i,
                 2]  # the network's confidence that this is a correct detection
-            # TODO tune condifence tresholds, have separate tresholds for stopping and detecting
-            # if confidence > 0.1:
-            #     print('Confidence:', confidence)
-            if confidence > 0.6:  # we believe that this is a face
+            if confidence > 0.5:  # we believe that this is a face
                 box = face_detections[0, 0, i, 3:7] * np.array(
                     [w, h, w, h])  # scale back the original size
                 box = box.astype('int')
@@ -200,8 +197,8 @@ class face_localizer:
                 face_region = rgb_image[y1:y2, x1:x2]
 
                 # Visualize the extracted face (in new window)
-                #cv2.imshow("ImWindow", face_region)
-                #cv2.waitKey(1)
+                # cv2.imshow("ImWindow", face_region)
+                # cv2.waitKey(1)
 
                 # Find the distance to the detected face
                 face_distance = float(np.nanmean(
@@ -237,56 +234,51 @@ class face_localizer:
                         self.confirming = True
                         self.pose_array.append(pose)
 
-
                         # First detection of a new face
-                        if self.confirming_rep >= 0:
+                        if self.confirming_rep == 1:
                             # Stop current goal execution (stop moving)
                             self.ac.cancel_all_goals()
 
+                        # End of detection
+                        if self.confirming_rep == 5:
+                            # Confirm that this is in fact a face
+                            success_num = len(self.pose_array)
+                            if success_num >= 4:
+                                # Greet face
+                                self.soundhandle.say('Hello!')
 
-            # End of detection
-            if self.confirming_rep >= 5:
-                # Confirm that this is in fact a face
-                success_num = len(self.pose_array)
-                if success_num >= 4:
-                    # Greet face
-                    self.soundhandle.say('Hello!')
+                                # Calculate mean position of face
+                                mean_pose = Pose()
+                                for pos in self.pose_array:
+                                    mean_pose.position.x += pos.position.x
+                                    mean_pose.position.y += pos.position.y
+                                    mean_pose.position.z += pos.position.z
 
-                    # Calculate mean position of face
-                    mean_pose = Pose()
-                    for pos in self.pose_array:
-                        mean_pose.position.x += pos.position.x
-                        mean_pose.position.y += pos.position.y
-                        mean_pose.position.z += pos.position.z
+                                mean_pose.position.x /= success_num
+                                mean_pose.position.y /= success_num
+                                mean_pose.position.z /= success_num
 
-                    mean_pose.position.x /= success_num
-                    mean_pose.position.y /= success_num
-                    mean_pose.position.z /= success_num
+                                # Create a marker used for visualization
+                                self.marker_num += 1
+                                marker = Marker()
+                                marker.header.stamp = rospy.Time(0)
+                                marker.header.frame_id = 'map'
+                                marker.pose = mean_pose
+                                marker.type = Marker.CUBE
+                                marker.action = Marker.ADD
+                                marker.frame_locked = False
+                                marker.lifetime = rospy.Duration.from_sec(10)
+                                marker.id = self.marker_num
+                                marker.scale = Vector3(0.1, 0.1, 0.1)
+                                marker.color = ColorRGBA(0, 1, 0, 1)
+                                self.marker_array.markers.append(marker)
 
-                    # Create a marker used for visualization
-                    self.marker_num += 1
-                    marker = Marker()
-                    marker.header.stamp = rospy.Time(0)
-                    marker.header.frame_id = 'map'
-                    marker.pose = mean_pose
-                    marker.type = Marker.CUBE
-                    marker.action = Marker.ADD
-                    marker.frame_locked = False
-                    marker.lifetime = rospy.Duration.from_sec(100)
-                    marker.id = self.marker_num
-                    marker.scale = Vector3(0.1, 0.1, 0.1)
-                    marker.color = ColorRGBA(0, 1, 0, 1)
-                    self.marker_array.markers.append(marker)
+                                self.markers_pub.publish(self.marker_array)
 
-                    print(self.marker_array)
-
-                    self.markers_pub.publish(self.marker_array)
-
-                # Reset variables
-                self.confirming = False
-                self.confirming_rep = 0
-                self.pose_array = []
-
+                            # Reset variables
+                            self.confirming = False
+                            self.confirming_rep = 0
+                            self.pose_array = []
 
     def depth_callback(self, data):
 
