@@ -1,6 +1,4 @@
 <launch>
-    <param name="use_sim_time" type="bool" value="true" />
-
     <!-- Gazebo -->
     <include file="$(find homework4)/launch/rins_world.launch"/>
 
