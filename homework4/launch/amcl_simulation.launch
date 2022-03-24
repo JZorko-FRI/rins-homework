@@ -15,7 +15,7 @@
 
   <!-- Move base -->
   <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot_rviz_launchers)/rviz/navigation.rviz"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find homework4)/rviz/config.rviz"/>
 
   <!-- Map config -->
   <rosparam file="$(find homework4)/config.yaml"/>

@@ -6,7 +6,7 @@
     <include file="$(find homework4)/launch/amcl_simulation.launch"/>
 
     <!-- Face detection -->
-    <node name="face_detection" pkg="homework4" type="face_localizer_dnn.py" output="screen"/>
+    <node name="face_detection" pkg="homework4" type="face_localizer_haar.py" output="screen"/>
 
     <!-- Movement -->
     <node name="map_goals" pkg="homework4" type="homework4_map_goals" output="screen"/>
