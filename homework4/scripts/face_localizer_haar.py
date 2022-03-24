@@ -144,7 +144,7 @@ class face_localizer:
         return pose
 
     def find_faces(self):
-        print('I got a new image!')
+        # print('I got a new image!')
 
         # Get the next rgb and depth images that are posted from the camera
         try:
@@ -231,12 +231,12 @@ class face_localizer:
                         marker.header.stamp = rospy.Time(0)
                         marker.header.frame_id = 'map'
                         marker.pose = pose
-                        marker.type = Marker.CUBE
+                        marker.type = Marker.SPHERE
                         marker.action = Marker.ADD
                         marker.frame_locked = False
-                        marker.lifetime = rospy.Duration.from_sec(10)
+                        marker.lifetime = rospy.Duration.from_sec(300)
                         marker.id = self.marker_num
-                        marker.scale = Vector3(0.1, 0.1, 0.1)
+                        marker.scale = Vector3(0.2, 0.2, 0.2)
                         marker.color = ColorRGBA(0, 1, 0, 1)
                         self.marker_array.markers.append(marker)
 
