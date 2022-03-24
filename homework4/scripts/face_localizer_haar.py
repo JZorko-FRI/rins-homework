@@ -24,13 +24,14 @@ from sound_play.libsoundplay import SoundClient
 
 
 def dist(pose1, pose2, min_dist):
-    if np.subtract(np.abs(
-            pose1.x), np.abs(pose2.x)) < min_dist and np.subtract(
-                np.abs(pose1.y), np.abs(pose2.y)) < min_dist and np.subtract(
-                    np.abs(pose1.z), np.abs(pose2.z)) < min_dist:
-        return True
+    """
+    Return true if poses closer that min_dist
+    """
+    p1 = np.array([pose1.x, pose1.y, pose1.z])
+    p2 = np.array([pose2.x, pose2.y, pose2.z])
+    dist = np.linalg.norm(p1 - p2)
 
-    return False
+    return dist != np.nan and dist < min_dist
 
 
 def detected(pose, pose_array, min_dist=0.5):
@@ -242,6 +243,7 @@ class face_localizer:
 
                         self.markers_pub.publish(self.marker_array)
 
+                        # Move towards detected face
                         map_goal = MoveBaseGoal()
                         map_goal.target_pose.header.frame_id = "map"
                         map_goal.target_pose.pose.orientation.z = robot_pose.pose.pose.orientation.z
@@ -255,8 +257,9 @@ class face_localizer:
                         self.ac.send_goal(map_goal)
                         self.ac.wait_for_result(rospy.Duration(3))
 
+                        # "Greet" the face
                         self.soundhandle.playWave(
-                            "/home/mokot/FRI/RazvojInteligentnihSistemov/ROS/src/homework4/sounds/hey-baby.wav"
+                            "../sounds/hey-baby.wav"
                         )
 
     def depth_callback(self, data):
