@@ -144,8 +144,11 @@ int main(int argc, char **argv)
     }
   }
 
-  // At the end play star wars (TODO: spremeni pot do datoteke)
-  sound_client.playWave("/home/mokot/FRI/RazvojInteligentnihSistemov/ROS/src/homework4/sounds/star-wars-theme-song.wav");
+  std::string sounds_dir;
+  node_handle.param<std::string>("/sound_play/sounds_dir", sounds_dir, "./");
+
+  // At the end play star wars
+  sound_client.playWave(sounds_dir + "star-wars-theme-song.wav");
   sleepok(30, node_handle);
 
   return 0;
