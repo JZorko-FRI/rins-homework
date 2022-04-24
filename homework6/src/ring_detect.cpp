@@ -57,61 +57,61 @@ std::vector<cv::Vec3f> circleDetect(cv::Mat input, cv::Mat output, int cannyTres
 }
 
 void handleImage(const sensor_msgs::ImageConstPtr& msg) {
-    // ROS_INFO("Image received");
-    cv_bridge::CvImageConstPtr cv_ptr;
-    try
-    {
-      cv_ptr = cv_bridge::toCvCopy(msg);
-      // ROS_INFO("copied image");
-    }
-    catch (cv_bridge::Exception& e)
-    {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
-    }
+  // ROS_INFO("Image received");
+  cv_bridge::CvImageConstPtr cv_ptr;
+  try
+  {
+    cv_ptr = cv_bridge::toCvCopy(msg);
+    // ROS_INFO("copied image");
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    ROS_ERROR("cv_bridge exception: %s", e.what());
+    return;
+  }
 
-    // message contaings 32-bit floating point depth image
-    // convert to standard 8-bit gray scale image
-    cv::Mat mono8_img = cv::Mat(cv_ptr->image.size(), CV_8UC1);
-    cv::convertScaleAbs(cv_ptr->image, mono8_img, 100, 0.0);
+  // message contaings 32-bit floating point depth image
+  // convert to standard 8-bit gray scale image
+  cv::Mat mono8_img = cv::Mat(cv_ptr->image.size(), CV_8UC1);
+  cv::convertScaleAbs(cv_ptr->image, mono8_img, 100, 0.0);
 
-    // create separate rgb image for displaying results
-    cv::Mat rgb_img = cv::Mat(mono8_img.size(), CV_8UC3);
-    cv::cvtColor(mono8_img, rgb_img, cv::COLOR_GRAY2RGB);
+  // create separate rgb image for displaying results
+  cv::Mat rgb_img = cv::Mat(mono8_img.size(), CV_8UC3);
+  cv::cvtColor(mono8_img, rgb_img, cv::COLOR_GRAY2RGB);
 
-    // prepare arguments for circle detection
-    int cannyTreshold = 100;
-    int accTreshold = 75;
-    int centerTreshold = 50;
+  // prepare arguments for circle detection
+  int cannyTreshold = 100;
+  int accTreshold = 75;
+  int centerTreshold = 50;
 
-    // detect circles in the depth map
-    std::vector<cv::Vec3f> circles;
-    circles = circleDetect(mono8_img, rgb_img, cannyTreshold, accTreshold, centerTreshold);
+  // detect circles in the depth map
+  std::vector<cv::Vec3f> circles;
+  circles = circleDetect(mono8_img, rgb_img, cannyTreshold, accTreshold, centerTreshold);
 
-    // publish image with detections
-    cv_bridge::CvImage out_msg;
-    out_msg.header   = msg->header; // Same timestamp and tf frame as input image
-    out_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
-    out_msg.image    = rgb_img;
-    image_pub.publish(out_msg.toImageMsg());
+  // publish image with detections
+  cv_bridge::CvImage out_msg;
+  out_msg.header   = msg->header; // Same timestamp and tf frame as input image
+  out_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
+  out_msg.image    = rgb_img;
+  image_pub.publish(out_msg.toImageMsg());
 
-    // publish detected circles
-    // TODO publish all detected circles with own message type
+  // publish detected circles
+  // TODO publish all detected circles with own message type
 
-    // display image with detections in separate window
-    cv::imshow(OPENCV_WINDOW, rgb_img);
-    cv::waitKey(1);
+  // display image with detections in separate window
+  cv::imshow(OPENCV_WINDOW, rgb_img);
+  cv::waitKey(1);
 }
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "ring_detect");
+  ros::init(argc, argv, "ring_detect");
 
-    ROS_INFO("Starting ring detection");
+  ROS_INFO("Starting ring detection");
 
-    ros::NodeHandle nh;
-    ros::Subscriber sub = nh.subscribe ("/camera/depth/image_raw", 1, &handleImage);
+  ros::NodeHandle nh;
+  ros::Subscriber sub = nh.subscribe ("/camera/depth/image_raw", 1, &handleImage);
 
-    image_pub = nh.advertise<sensor_msgs::Image>("/ring_detect/image", 1);
+  image_pub = nh.advertise<sensor_msgs::Image>("/ring_detect/image", 1);
 
-    ros::spin();
+  ros::spin();
 }
