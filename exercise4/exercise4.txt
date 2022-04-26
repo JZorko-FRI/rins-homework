@@ -1,0 +1,24 @@
+# Exercise 4: Face detection and transform frames
+
+# Start the simulation
+$ roscore
+
+# Navigation stack:
+$ roslaunch exercise3 amcl_simulation.launch
+
+# Visualize navigation
+$ roslaunch turtlebot_rviz_launchers view_navigation.launch
+
+# Start the breadcrumbs node
+# Display markers: rviz -> add -> topic -> marker array
+$ rosrun exercise4 breadcrumbs
+
+# Face detection
+# Display camera: rviz -> add -> topic -> camera -> rgb -> image_raw -> camera
+# + add face markers
+$ rosrun exercise4 face_localizer_dlip # -> uses HOG face detector
+$ rosrun exercise4 face_localizer_dnn # -> uses deep neural network
+$ rosrun exercise4 face_localizer_haar # -> uses HOG face detector
+
+# Note: redirect tf (transform library) errors to the dark whole
+$ ... 2>/dev/null
