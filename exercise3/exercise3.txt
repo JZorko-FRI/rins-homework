@@ -1,0 +1,31 @@
+# Exercise 3: The Turtlebot
+
+# GAZEBO simulator:
+# .dae = 3d model + graphics to be included in the model
+# .world = model/recipe which Gazebo actually loads
+
+# Start a complete simulation of the Turtlebot robot in Gazebo
+$ roslaunch exercise3 rins_world.launch
+
+# Start a Rviz visualizer
+$ rviz
+$ roslaunch turtlebot_rviz_launchers view_robot.launch
+$ rostopic info /scan
+$ rostopic echo /scan
+
+# Control the robot with the keyboard
+$ roslaunch turtlebot_teleop keyboard_teleop.launch
+
+# 1. Map-building
+$ roslaunch exercise3 gmapping_simulation.launch
+$ roslaunch turtlebot_rviz_launchers view_navigation.launch 
+$ roslaunch turtlebot_teleop keyboard_teleop.launch
+# Build a map and export it (.yaml + .pgm)
+$ rosrun map_server map_saver -f [the_name_of_your_map]
+
+# 2. Navigation
+# Start the simulation 
+$ roslaunch exercise3 rins_world.launch
+# Start the navigation (amcl = Adaptive Monte Carlo Localization)
+$ roslaunch exercise3 amcl_simulation.launch
+$ roslaunch turtlebot_rviz_launchers view_navigation.launch

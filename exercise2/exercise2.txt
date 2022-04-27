@@ -1,0 +1,25 @@
+# Exercise 2: Introduction to ROS 
+
+# Recompile and build package
+$ catkin_make
+
+# Launch a specific script in package
+$ roslaunch [package_name] [script_name]
+
+# List parameters (namespaces)
+$ rosparam list
+
+# Debugging tool - record nodes/topics/services ... - replay
+$ rosbag help
+
+# Record messages for n seconds (m = minutes)
+$ rosbag record --duration=[n] --output-name=[bag_name] [topic_names ...]
+
+# Get information about bag
+$ rosbag info [bag_name]
+
+# Play what we have recorded
+$ rosbag play [bag_name]
+
+# Get visual information (ROS inspection GUI)
+$ rqt

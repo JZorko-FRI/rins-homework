@@ -1,0 +1,21 @@
+<launch>
+    <!-- Gazebo -->
+    <include file="$(find task2)/launch/rins_world.launch"/>
+
+    <!-- Rviz -->
+    <include file="$(find task2)/launch/amcl_simulation.launch"/>
+
+    <!-- Face detection -->
+    <!-- <node name="face_detection" pkg="task2" type="face_localizer.py" output="screen"/> -->
+
+    <!-- Movement -->
+    <!-- <node name="map_goals" pkg="task2" type="task2_map_goals" output="screen"/> -->
+
+    <!-- Sound -->
+    <!-- <node name="sound_play" pkg="sound_play" type="soundplay_node.py" output="screen">
+        <param name="sounds_dir" type="string" value="$(find task2)/sounds/"/>
+    </node> -->
+
+    <!-- Map config -->
+    <rosparam file="$(find task2)/config.yaml"/>
+</launch>

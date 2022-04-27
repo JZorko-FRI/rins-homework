@@ -1,0 +1,53 @@
+# Exercise 1: Introduction to ROS
+
+# Start ROS nodes (programs) - Start the ROS Master
+$ roscore
+
+# Run specific ROS nodes
+$ rosrun [package_name] [node_name]
+
+# Answer the following questions:
+# 1. Which nodes are currently active?
+$ rosnode list
+
+# 2. What topics are currently active?
+$ rostopic list
+
+# 3. What is the message type for each topic?
+$ rostopic info [topic_name]
+$ rostopic type [topic_name]
+
+# 4. What topics is each node publishing to?
+$ rostopic info [topic_name]
+$ rosnode info [topic_name] -q
+
+# 5. What topics is each node subscribed to?
+$ rostopic info [topic_name]
+$ rosnode info [topic_name] -q
+
+# 6. The used message types belong to which packages?
+$ rosmsg pacakge [package_name]
+
+# 7. Get a visualization of all the nodes and topics in the system.
+$ rqt_graph
+
+# 8. Get a printout of all the packages installed in the system.
+$ rospack list
+
+# 9. Get a printout of all the messages installed in the system
+$ rosmsg list
+
+# 10. Print out the messages being published on each topic.
+$ rostopic echo [topic_name]
+
+# 11. Publish a message on each topic
+$ rostopic pub [topic_name] [message_type] [message]
+
+# Recompile and build package
+$ catkin_make
+
+# Launch a specific script in package
+$ roslaunch [package_name] [script_name]
+
+# Create new catkin package
+$ catkin_create_pkg [package_name] [dependencies]
