@@ -4,6 +4,7 @@ project(homework6)
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
 	rospy
+	OpenCV
 	cv_bridge
 	tf2_ros
 
@@ -21,13 +22,15 @@ catkin_package()
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 add_executable(homework6_map_goals src/map_goals.cpp)
+add_executable(homework6_ring_detect src/ring_detect.cpp)
 
 catkin_install_python(PROGRAMS
     scripts/face_localizer.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-target_link_libraries(homework6_map_goals ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(homework6_map_goals ${catkin_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(homework6_ring_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 #include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 #add_executable(map_goals src/map_goals.cpp)
