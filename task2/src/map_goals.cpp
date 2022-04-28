@@ -132,9 +132,8 @@ int main(int argc, char **argv)
   node_handle.param<std::string>("/sound_play/sounds_dir", sounds_dir, "./");
 
   // At the end play star wars
-  sound_client.playWave(sounds_dir + "star-wars-theme-song.wav");
+  // sound_client.playWave(sounds_dir + "star-wars-theme-song.wav");
   sleepok(30, node_handle);
 
   return 0;
 }
-
