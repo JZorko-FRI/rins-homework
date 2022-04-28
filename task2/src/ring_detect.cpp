@@ -1,7 +1,11 @@
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
+
 #include "sensor_msgs/Image.h"
+#include "std_msgs/String.h"
 
 // Depth map available at /camera/depth/image_raw
 // Use opencv HoughCircles to detect circles in the depth map
@@ -9,9 +13,74 @@
 // sudo apt install libopencv-dev
 
 using namespace cv_bridge;
+using namespace message_filters;
 
 ros::Publisher image_pub;
+ros::Publisher color_pub;
 std::string OPENCV_WINDOW = "Camera";
+
+std::string detectColors(std::vector<cv::Vec3f> circles, cv::Mat output, cv::Mat rgb_img) {
+	// Define center and radius of circles
+	cv::Point center(cvRound(circles[0][0]), cvRound(circles[0][1]));
+	int radius = cvRound(circles[0][2]);
+
+	int x = int(cvRound(circles[0][0] - radius)) + 10;
+	int y = int(cvRound(circles[0][1] - radius)) + 10;
+	
+	int img_w = rgb_img.size().width;
+	int img_h = rgb_img.size().height;
+	
+	if (y < 0) {
+		y = 0;
+	}
+	
+	if (y > img_h) {
+		y = img_h;
+	}
+	
+	if (x < 0) {
+		x = 0;
+	}
+	
+	if (x > img_w) {
+		x = img_w;
+	}
+	
+	int w = (x + 2 * (radius + 10) >= img_w) ? (img_w - x) : (2 * (radius + 10));
+	int h = (y + 2 * (radius + 10) >= 0) ? (img_h - y) : (2 * (radius + 10));
+	cv::Rect rect(x, y, w, h);
+	cv::Mat crop_ring = rgb_img(rect);
+	
+	// To HSV
+	cv::Mat hsv_light;
+	cv::cvtColor(crop_ring, hsv_light, CV_BGR2HSV);
+	std::vector<cv::Mat> channels;
+	cv::split(hsv_light, channels);
+	channels[0] += 30;
+	cv::merge(channels, hsv_light);
+	
+	cv::Mat hsv_threshold;
+	cv::inRange(hsv_light, cv::Scalar(0, 5, 0), cv::Scalar(255, 100, 100), hsv_threshold);
+
+	float mean_hue_light = mean(hsv_light, hsv_threshold)[0];
+
+	//printf("%f \n", mean_hue_value);
+	
+	std::string color = "none";
+	
+	//TODO detect black color
+	
+	if (mean_hue_light > 270 || mean_hue_light < 50) {
+		color = "red";
+	} else if (mean_hue_light > 50 && mean_hue_light < 120) {
+		color = "green";
+	} else if (mean_hue_light > 120 && mean_hue_light < 270) {
+		color = "blue";
+	}
+	
+	cv::putText(output, color, center, cv::FONT_HERSHEY_SIMPLEX, 0.75, cv::Scalar::all(255));
+	return color;
+}
 
 std::vector<cv::Vec3f> circleDetect(cv::Mat input, cv::Mat output, int cannyTreshold, int accTreshold, int centerTreshold) {
   // prepare output arrays
@@ -22,7 +91,7 @@ std::vector<cv::Vec3f> circleDetect(cv::Mat input, cv::Mat output, int cannyTres
   int minRadius = 10;
   int maxRadius = 1000;
   int accResolution = 2;
-  int minDist = input.rows / 8;
+  int minDist = 1;
 
   // perform detection
   cv::HoughCircles(input, all_circles, cv::HOUGH_GRADIENT, accResolution, minDist,
@@ -31,6 +100,8 @@ std::vector<cv::Vec3f> circleDetect(cv::Mat input, cv::Mat output, int cannyTres
   // if (all_circles.size() > 0) {
   //   ROS_INFO("Found circles");
   // }
+  
+  ROS_INFO("Number of circles %lu.", all_circles.size());
 
   // draw detected circles
   for (size_t i = 0; i < all_circles.size(); i++) {
@@ -51,18 +122,23 @@ std::vector<cv::Vec3f> circleDetect(cv::Mat input, cv::Mat output, int cannyTres
     cv::circle(output, center, 3, cv::Scalar(0, 255, 0), -1, 8, 0);
     // red circle outline
     cv::circle(output, center, radius, cv::Scalar(0, 0, 255), 3, 8, 0);
+	
+	//cv::imshow(OPENCV_WINDOW, output);
   }
 
   return valid_circles;
 }
 
-void handleImage(const sensor_msgs::ImageConstPtr& msg) {
-  // ROS_INFO("Image received");
+void handleImage(const sensor_msgs::ImageConstPtr& msg, const sensor_msgs::ImageConstPtr& msgRGB) {
+  ROS_INFO("Image received");
+  
   cv_bridge::CvImageConstPtr cv_ptr;
+  cv_bridge::CvImageConstPtr cv_rgb_ptr;
   try
   {
-    cv_ptr = cv_bridge::toCvCopy(msg);
+    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
     // ROS_INFO("copied image");
+	cv_rgb_ptr = cv_bridge::toCvCopy(msgRGB, sensor_msgs::image_encodings::BGR8);
   }
   catch (cv_bridge::Exception& e)
   {
@@ -87,6 +163,12 @@ void handleImage(const sensor_msgs::ImageConstPtr& msg) {
   // detect circles in the depth map
   std::vector<cv::Vec3f> circles;
   circles = circleDetect(mono8_img, rgb_img, cannyTreshold, accTreshold, centerTreshold);
+  
+  std::string color = "none";
+  if (circles.size() >= 1) {
+	ROS_INFO("Detecting colors");
+	color = detectColors(circles, rgb_img, cv_rgb_ptr->image);
+  }
 
   // publish image with detections
   cv_bridge::CvImage out_msg;
@@ -94,6 +176,11 @@ void handleImage(const sensor_msgs::ImageConstPtr& msg) {
   out_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
   out_msg.image    = rgb_img;
   image_pub.publish(out_msg.toImageMsg());
+  
+  // Publish ring color
+  std_msgs::String str;
+  str.data = color;
+  color_pub.publish(str);
 
   // publish detected circles
   // TODO publish all detected circles with own message type
@@ -109,9 +196,15 @@ int main(int argc, char** argv) {
   ROS_INFO("Starting ring detection");
 
   ros::NodeHandle nh;
-  ros::Subscriber sub = nh.subscribe ("/camera/depth/image_raw", 1, &handleImage);
+  
+  message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/depth/image_raw", 1);
+  message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_raw", 1);
+  TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(depth_sub, rgb_sub, 10);
+  
+  sync.registerCallback(boost::bind(&handleImage, _1, _2));
 
   image_pub = nh.advertise<sensor_msgs::Image>("/ring_detect/image", 1);
+  color_pub = nh.advertise<std_msgs::String>("/park_robot", 1000);
 
   ros::spin();
 }
