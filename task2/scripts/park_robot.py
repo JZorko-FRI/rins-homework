@@ -17,7 +17,7 @@ class Park_Robot():
         rospy.init_node('park_robot', anonymous=True)
 
         self.map_normal = np.load(
-            '/home/mokot/FRI/RazvojInteligentnihSistemov/ROS/src/task2/maps/normal_map.npy'
+            '/home/parallels/FRI/ros/src/homework/task2/maps/normal_map.npy'
         )
 
         self.map_resolution = rospy.get_param('/map_server/map_resolution')
@@ -81,6 +81,8 @@ class Park_Robot():
         map_goal.target_pose.pose.orientation.z = self.points[index][2]
         map_goal.target_pose.pose.orientation.w = self.points[index][3]
 
+        self.park_robot_client.cancel_all_goals()
+
         self.park_robot_client.send_goal(map_goal)
         wait = self.park_robot_client.wait_for_result()
         if not wait:
@@ -100,6 +102,7 @@ class Park_Robot():
         # retract arm camera
         self.arm_robot_publisher.publish("extend")
 
+        rospy.signal_shutdown()
         return
 
     def park(self, index):
@@ -161,6 +164,7 @@ class Park_Robot():
         map_goal.target_pose.pose.orientation.y = 0.0
         map_goal.target_pose.pose.orientation.z = self.parking_points[index][2]
         map_goal.target_pose.pose.orientation.w = self.parking_points[index][3]
+        self.park_robot_client.cancel_all_goals()
         self.park_robot_client.send_goal(map_goal)
         self.park_robot_client.wait_for_result()
         print("Robot parked!")

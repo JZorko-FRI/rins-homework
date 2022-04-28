@@ -166,7 +166,7 @@ void handleImage(const sensor_msgs::ImageConstPtr& msg, const sensor_msgs::Image
 
   std::string color = "none";
   if (circles.size() >= 1) {
-	ROS_INFO("Detecting colors");
+	// ROS_INFO("Detecting colors");
 	color = detectColors(circles, rgb_img, cv_rgb_ptr->image);
   }
 
@@ -186,8 +186,8 @@ void handleImage(const sensor_msgs::ImageConstPtr& msg, const sensor_msgs::Image
   // TODO publish all detected circles with own message type
 
   // display image with detections in separate window
-  cv::imshow(OPENCV_WINDOW, rgb_img);
-  cv::waitKey(1);
+  // cv::imshow(OPENCV_WINDOW, rgb_img);
+  // cv::waitKey(1);
 }
 
 int main(int argc, char** argv) {
