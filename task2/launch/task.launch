@@ -8,6 +8,9 @@
     <!-- Face detection -->
     <!-- <node name="face_detection" pkg="task2" type="face_localizer.py" output="screen"/> -->
 
+    <!-- Cylinder detection -->
+    <node name="cylinder_detect" pkg="task2" type="task2_cylinder_detect" output="screen"/>
+
     <!-- Movement -->
     <!-- <node name="map_goals" pkg="task2" type="task2_map_goals" output="screen"/> -->
 
