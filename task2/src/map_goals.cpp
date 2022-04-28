@@ -77,14 +77,16 @@ int main(int argc, char **argv)
   }
 
   // 5 goal locations on the map
-  const float map_goals[7][2] = {
-      {0.05, -1.55},
-      {2.25, -1.50},
-      {3.25, -0.50},
-      {1.40, 0.10},
-      {2.65, 2.20},
-      {-0.60, 1.65},
-      {1.45, -1.80},
+  const float map_goals[9][2] = {
+      {-0.85, -0.20},
+      {-0.75, 1.55},
+      {1.00, 2.40},
+      {1.30, 0.25},
+      {2.05, 1.00},
+      {3.30, -0.15},
+      {2.60, 0.20},
+      {2.25, -1.30},
+      {1.55, -1.55},
   };
 
   // Move robot to every location
@@ -135,3 +137,4 @@ int main(int argc, char **argv)
 
   return 0;
 }
+
