@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 )
 
+generate_messages(DEPENDENCIES std_msgs)
+
 find_package( OpenCV REQUIRED )
 
 catkin_package()
@@ -27,6 +29,8 @@ add_executable(task2_ring_detect src/ring_detect.cpp)
 catkin_install_python(PROGRAMS
     scripts/face_localizer.py
 		scripts/move_arm.py
+		scripts/park_robot.py
+		scripts/normal_map.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -38,3 +42,4 @@ target_link_libraries(task2_ring_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
 #target_link_libraries(map_goals ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 #catkin_install_python(PROGRAMS scripts/detect_rings DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
