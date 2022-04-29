@@ -61,11 +61,11 @@ std::string detectColors(std::vector<cv::Vec3f> circles, cv::Mat output, cv::Mat
 
 	cv::Mat hsv_threshold;
 	cv::inRange(hsv_light, cv::Scalar(0, 5, 0), cv::Scalar(255, 100, 100), hsv_threshold);
-	
+
 	float mean_r = mean(crop_ring, hsv_threshold)[0];
 	float mean_g = mean(crop_ring, hsv_threshold)[1];
 	float mean_b = mean(crop_ring, hsv_threshold)[2];
-	
+
 	if (mean_r < 40 && mean_g < 40 && mean_b < 40) {
 		cv::putText(output, "black", center, cv::FONT_HERSHEY_SIMPLEX, 0.75, cv::Scalar::all(255));
 		return "black";
@@ -211,6 +211,8 @@ int main(int argc, char** argv) {
   TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(depth_sub, rgb_sub, 10);
 
   sync.registerCallback(boost::bind(&handleImage, _1, _2));
+
+  // ros::Duration(10).sleep();
 
   image_pub = nh.advertise<sensor_msgs::Image>("/ring_detect/image", 1);
   color_pub = nh.advertise<std_msgs::String>("/park_robot", 1000);
