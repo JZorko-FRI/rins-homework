@@ -60,7 +60,13 @@ std::string detectColors(std::vector<cv::Vec3f> circles, cv::Mat output, cv::Mat
 	cv::merge(channels, hsv_light);
 
 	cv::Mat hsv_threshold;
-	cv::inRange(hsv_light, cv::Scalar(0, 5, 0), cv::Scalar(255, 100, 100), hsv_threshold);
+	cv::inRange(hsv_light, cv::Scalar(0, 10, 0), cv::Scalar(180, 255, 255), hsv_threshold);
+
+	float mean_hue_light = mean(hsv_light, hsv_threshold)[0];
+	
+	if (mean_hue_light == 0) {
+		return "none";
+	}
 
 	float mean_r = mean(crop_ring, hsv_threshold)[0];
 	float mean_g = mean(crop_ring, hsv_threshold)[1];
@@ -71,15 +77,13 @@ std::string detectColors(std::vector<cv::Vec3f> circles, cv::Mat output, cv::Mat
 		return "black";
 	}
 
-	float mean_hue_light = mean(hsv_light, hsv_threshold)[0];
-
 	std::string color = "none";
 
 	if (mean_hue_light > 170 || mean_hue_light < 50) {
 		color = "red";
-	} else if (mean_hue_light > 50 && mean_hue_light < 120) {
+	} else if (mean_hue_light > 50 && mean_hue_light < 100) {
 		color = "green";
-	} else if (mean_hue_light > 120 && mean_hue_light < 170) {
+	} else if (mean_hue_light > 100 && mean_hue_light < 170) {
 		color = "blue";
 	}
 
@@ -94,7 +98,7 @@ std::vector<cv::Vec3f> circleDetect(cv::Mat input, cv::Mat output, int cannyTres
 
   // fixed arguments for HoughCircles
   int minRadius = 10;
-  int maxRadius = 1000;
+  int maxRadius = 100;
   int accResolution = 2;
   int minDist = 1;
 
