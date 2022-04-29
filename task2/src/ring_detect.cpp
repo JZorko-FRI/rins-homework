@@ -61,20 +61,25 @@ std::string detectColors(std::vector<cv::Vec3f> circles, cv::Mat output, cv::Mat
 
 	cv::Mat hsv_threshold;
 	cv::inRange(hsv_light, cv::Scalar(0, 5, 0), cv::Scalar(255, 100, 100), hsv_threshold);
+	
+	float mean_r = mean(crop_ring, hsv_threshold)[0];
+	float mean_g = mean(crop_ring, hsv_threshold)[1];
+	float mean_b = mean(crop_ring, hsv_threshold)[2];
+	
+	if (mean_r < 40 && mean_g < 40 && mean_b < 40) {
+		cv::putText(output, "black", center, cv::FONT_HERSHEY_SIMPLEX, 0.75, cv::Scalar::all(255));
+		return "black";
+	}
 
 	float mean_hue_light = mean(hsv_light, hsv_threshold)[0];
 
-	//printf("%f \n", mean_hue_value);
-
 	std::string color = "none";
 
-	//TODO detect black color
-
-	if (mean_hue_light > 270 || mean_hue_light < 50) {
+	if (mean_hue_light > 170 || mean_hue_light < 50) {
 		color = "red";
 	} else if (mean_hue_light > 50 && mean_hue_light < 120) {
 		color = "green";
-	} else if (mean_hue_light > 120 && mean_hue_light < 270) {
+	} else if (mean_hue_light > 120 && mean_hue_light < 170) {
 		color = "blue";
 	}
 
