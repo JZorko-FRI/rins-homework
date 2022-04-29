@@ -178,9 +178,13 @@ void handleImage(const sensor_msgs::ImageConstPtr& msg, const sensor_msgs::Image
   image_pub.publish(out_msg.toImageMsg());
 
   // Publish ring color
-  std_msgs::String str;
-  str.data = color;
-  color_pub.publish(str);
+
+  if (color == "green") {
+    std_msgs::String str;
+    str.data = color;
+    color_pub.publish(str);
+    ros::shutdown();
+  }
 
   // publish detected circles
   // TODO publish all detected circles with own message type

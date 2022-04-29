@@ -15,6 +15,9 @@
     <node name="ring_detect" pkg="task2" type="task2_ring_detect" output="screen"/>
 
     <!-- Parking -->
+    <node name="move_arm" pkg="task2" type="move_arm.py" output="screen"/>
+
+    <!-- Parking -->
     <node name="parking" pkg="task2" type="park_robot.py" output="screen"/>
 
     <!-- Movement -->

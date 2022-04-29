@@ -17,7 +17,7 @@ class MagnitudeAngle:
 def gradient_magnitude(image, size, sigma):
     """
     Function that accepts grayscale image and returns both derivative magnitudes
-    and derivative angles. Magnitude is calculated as 
+    and derivative angles. Magnitude is calculated as
     m(x, y) = (Ix(x, y)^2 + Iy(x, y)^2 )^1/2 and angles are calculated as
     and(x, y) = arctan(Iy(x, y) / Ix(x, y)).
     """
@@ -43,8 +43,8 @@ def gradient_magnitude(image, size, sigma):
 # Function gauss_filter
 def gauss_filter(signal, kernel):
     """
-    Function that accepts two Gaussian filters and applies it to a 2D signal. 
-    Gaussian kernel is used in one dimension only, then the result is 
+    Function that accepts two Gaussian filters and applies it to a 2D signal.
+    Gaussian kernel is used in one dimension only, then the result is
     convoluted. The function should return filtered 2D signal.
     """
 
@@ -56,9 +56,9 @@ def gauss_filter(signal, kernel):
 # Function gaussdx_kernel
 def gaussdx_kernel(kernel_size, sigma):
     """
-    Function that uses desired kernel and the parameter sigma. The 
+    Function that uses desired kernel and the parameter sigma. The
     parameter sigma defines the shape of the kernel. The function computes
-    derivate of 1D Gaussian kernel. The function returns derivated gaussian 
+    derivate of 1D Gaussian kernel. The function returns derivated gaussian
     kernel with desired size and sigma.
     """
 
@@ -73,8 +73,8 @@ def gaussdx_kernel(kernel_size, sigma):
 # Function gauss_kernel
 def gauss_kernel(kernel_size, sigma):
     """
-    Function that uses desired kernel and the parameter sigma. The 
-    parameter sigma defines the shape of the kernel. The function returns 
+    Function that uses desired kernel and the parameter sigma. The
+    parameter sigma defines the shape of the kernel. The function returns
     gaussian kernel with desired size and sigma.
     """
 
@@ -87,7 +87,7 @@ def gauss_kernel(kernel_size, sigma):
 
 def calc_normal_map():
     image = cv2.imread(
-        "/home/mokot/FRI/RazvojInteligentnihSistemov/ROS/src/task2/maps/map.pgm"
+        "/home/parallels/FRI/ros/src/homework/task2/maps/map.pgm"
     )
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -102,4 +102,4 @@ plt.figure(figsize=(15, 12))
 plt.imshow(calc_normal_map()[0], cmap='gray')
 plt.imshow(calc_normal_map()[1], cmap='gray')
 plt.show()
-# np.save("/home/mokot/FRI/RazvojInteligentnihSistemov/ROS/src/task2/maps/normal_map.npy", calc_normal_map())
+# np.save("/home/parallels/FRI/ros/src/homework/task2/maps/normal_map.npy", calc_normal_map())

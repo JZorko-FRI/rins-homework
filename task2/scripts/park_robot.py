@@ -102,7 +102,7 @@ class Park_Robot():
         # retract arm camera
         self.arm_robot_publisher.publish("extend")
 
-        rospy.signal_shutdown()
+        rospy.signal_shutdown("Robot parked")
         return
 
     def park(self, index):
