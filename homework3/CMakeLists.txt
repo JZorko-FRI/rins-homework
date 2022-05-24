@@ -9,7 +9,7 @@ project(homework3)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
-  	rospy
+  rospy
 	cv_bridge
 	sensor_msgs
 	nav_msgs

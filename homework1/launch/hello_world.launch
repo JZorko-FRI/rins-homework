@@ -1,0 +1,3 @@
+<launch>
+  <node name="node" pkg="homework1" type="homework1_hello_world" output="screen"/>
+</launch>

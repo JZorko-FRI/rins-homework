@@ -1,0 +1,4 @@
+string movement_type
+uint32 duration
+---
+string movement_type

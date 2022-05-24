@@ -1,0 +1,5 @@
+$ roslaunch exercise6 rins_world.launch # run rins world in gazebo
+$ roslaunch turtlebot_custom_navigation amcl_simulation.launch -> roslaunch exercise3 amcl_simulation.launch
+$ roslaunch turtlebot_rviz_launchers view_navigation.launch
+$ roslaunch exercise6 find_cylinder.launch
+$ rosrun exercise6 detect_rings

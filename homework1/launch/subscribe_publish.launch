@@ -1,0 +1,4 @@
+<launch>
+  <node name="publisher" pkg="homework1" type="homework1_publish_msg" output="screen"/>
+  <node name="subscriber" pkg="homework1" type="homework1_subscribe_msg" output="screen"/>
+</launch>

@@ -46,14 +46,14 @@ void statusCallback(const actionlib_msgs::GoalStatusArray &goal_status)
 {
   if (goal_status.header.seq % 10 == 0 && moving)
   {
-    ROS_INFO("%s", (char*)&goal_status.status_list[0].text);
+    ROS_INFO("%s", (char *)&goal_status.status_list[0].text);
   }
 }
 
 int main(int argc, char **argv)
 {
 
-  ros::init(argc, argv, "homework3_map_goals");
+  ros::init(argc, argv, "homework4_map_goals");
   ros::NodeHandle node_handle;
 
   ros::Subscriber map_subscriber = node_handle.subscribe("map", 10, &mapCallback);
@@ -67,10 +67,11 @@ int main(int argc, char **argv)
   }
 
   // 5 goal locations on the map
-  float map_goals[5][2] = {{2.65, -1.10}, {0.55, -1.25}, {1.05, 1.40}, {-2.90, 0.90}, {0.95, -2.20}};
+  const float map_goals[5][2] = {{2.65, -1.10}, {0.55, -1.25}, {1.05, 1.40}, {-2.90, 0.90}, {0.95, -2.20}};
 
   // Move robot to every location
-  for (int i = 0; i < (sizeof(map_goals) / sizeof(*map_goals)); i++)
+  int i = 0;
+  while (i < (sizeof(map_goals) / sizeof(*map_goals)))
   {
     move_base_msgs::MoveBaseGoal map_goal;
     map_goal.target_pose.header.frame_id = "map";
@@ -87,11 +88,24 @@ int main(int argc, char **argv)
     ac.waitForResult();
     moving = false;
 
-    if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+    actionlib::SimpleClientGoalState goal_state = ac.getState();
+
+    if (goal_state == actionlib::SimpleClientGoalState::SUCCEEDED)
+    {
       ROS_INFO("Robot moved to (x: %f, y: %f).", map_goals[i][0], map_goals[i][1]);
+      i++;
+    }
+    else if (goal_state == actionlib::SimpleClientGoalState::RECALLED || goal_state == actionlib::SimpleClientGoalState::PREEMPTED)
+    {
+      ROS_INFO("Face has been detected. Waiting for confirmation.");
+      ros::Duration(5).sleep();
+    }
     else
+    {
       ROS_ERROR("The robot failed to move!");
+      i++;
       // return 1; // Continue ...
+    }
   }
 
   return 0;

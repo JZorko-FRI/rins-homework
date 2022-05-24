@@ -1,0 +1,15 @@
+<launch>
+
+  <node pkg="turtlesim" type="turtlesim_node" name="turtlesim_node" output="screen"/>
+
+  <node pkg="homework2" type="homework2_service" name="homework2_service"  output="screen">
+    <remap from="cmd_vel" to="/turtle1/cmd_vel" />
+  </node>
+
+  <node pkg="homework2" type="homework2_client" name="homework2_client" output="screen">
+    <param name="duration" value="100" type="int"/>
+    <param name="movement_type" value="RANDOM" type="string"/>
+  </node>
+
+</launch>
+

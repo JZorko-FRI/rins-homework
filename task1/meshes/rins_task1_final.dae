@@ -2363,13 +2363,13 @@
     </library_effects>
     <library_images>
         <image id="ID188">
-            <init_from>__auto_8.png</init_from>
+            <init_from>rins_task1_final/__auto_8.png</init_from>
         </image>
         <image id="ID201">
-            <init_from>__auto_7.png</init_from>
+            <init_from>rins_task1_final/__auto_7.png</init_from>
         </image>
         <image id="ID278">
-            <init_from>__auto_10.png</init_from>
+            <init_from>rins_task1_final/__auto_10.png</init_from>
         </image>
     </library_images>
     <scene>

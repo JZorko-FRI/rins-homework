@@ -1,48 +1,97 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(task2)
 
+## Find system dependencies
+find_package(Boost REQUIRED COMPONENTS system filesystem thread)
+find_package(Eigen3 REQUIRED)
+find_package(PCL REQUIRED)
+find_package(OpenCV REQUIRED)
+
+## Poisci kitkat paketke :3 
 find_package(catkin REQUIRED COMPONENTS
-	roscpp
-	rospy
-	OpenCV
-	cv_bridge
-	tf2_ros
-
-	sensor_msgs
-	visualization_msgs
-	nav_msgs
-	std_msgs
-	geometry_msgs
-	laser_geometry
+  cv_bridge
+  dynamic_reconfigure
+  genmsg
+  geometry_msgs
+  image_transport
+  nodelet
+  nodelet_topic_tools
+  pcl_conversions
+  message_generation
+  pcl_msgs
+  pluginlib
+  rosbag
+  rosconsole
+  roscpp
+  roslib
+  rospy
+  sensor_msgs
+  std_msgs
+  tf2_geometry_msgs
+  tf2_ros
+  tf
 )
 
-generate_messages(DEPENDENCIES std_msgs)
 
-find_package( OpenCV REQUIRED )
-find_package( Eigen3 REQUIRED )
-
-catkin_package()
-
-include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
-
-add_executable(task2_map_goals src/map_goals.cpp)
-add_executable(task2_ring_detect src/ring_detect.cpp)
-add_executable(task2_cylinder_detect src/cylinder_detect.cpp)
-
-catkin_install_python(PROGRAMS
-    scripts/face_localizer.py
-	scripts/move_arm.py
-	scripts/park_robot.py
-	scripts/normal_map.py
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+## Include directories
+include_directories(include
+  ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  ${Eigen_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
-target_link_libraries(task2_map_goals ${catkin_LIBRARIES} ${OpenCV_LIBS})
-target_link_libraries(task2_ring_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
-target_link_libraries(task2_cylinder_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
-#include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
-#add_executable(map_goals src/map_goals.cpp)
-#target_link_libraries(map_goals ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+## Povezi direktorije
+link_directories(
+  ${Boost_LIBRARY_DIRS}
+  ${Eigen_LIBRARY_DIRS}
+  ${PCL_LIBRARY_DIRS}
+  ${catkin_LIBRARY_DIRS}
+)
+  
+link_libraries(${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-#catkin_install_python(PROGRAMS scripts/detect_rings DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_message_files(
+  FILES
+  ColorPose.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
+
+## Declare the kitkat pakidz
+catkin_package(
+  LIBRARIES
+    pcl_ros_filters
+    pcl_ros_io
+    pcl_ros_tf
+  CATKIN_DEPENDS 
+    cv_bridge
+    message_runtime
+    dynamic_reconfigure
+    image_transport
+    pcl_conversions
+    pcl_msgs
+    roscpp
+    sensor_msgs
+    std_msgs
+  DEPENDS
+    Boost
+    Eigen
+    PCL
+)
+
+
+## Si plas plas 
+add_executable (circle src/circle_detection.cpp)
+
+add_dependencies(circle ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+## Si plas plas links
+target_link_libraries(circle ${catkin_LIBRARIES} ${OpenCV_INCLUDE_DIRS})
+
