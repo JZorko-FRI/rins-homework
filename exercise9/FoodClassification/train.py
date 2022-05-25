@@ -8,11 +8,9 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
-print("PyTorch Version: ",torch.__version__)
-print("Torchvision Version: ",torchvision.__version__)
 
-data_dir = '/home/matej/Datasets/Foodero/'
-model_path = '/home/matej/Datasets/Foodero/best_foodero_model.pt'
+data_dir = '../Foodero_dataset/Foodero/'
+model_path = 'best_foodero_model.pt'
 
 model_name = 'squeeze_net'
 num_classes = 5
