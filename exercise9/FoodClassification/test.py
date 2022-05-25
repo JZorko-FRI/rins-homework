@@ -30,8 +30,8 @@ class_dict = {0:'baklava',
               3:'solata',
               4:'torta'}
 
-images_path = './images'
-model_path = './best_foodero_model.pt'
+images_path = '/home/matej/Programs/FoodClassification/images'
+model_path = '/home/matej/Programs/FoodClassification/best_foodero_model_old.pt'
 
 model = torch.load(model_path)
 model.eval()
@@ -54,3 +54,4 @@ for image_name in os.listdir(images_path):
     plt.imshow(img_p)
     plt.text(20,50,class_dict[class_ind], c='g')
     plt.show()
+

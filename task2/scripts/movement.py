@@ -21,6 +21,8 @@ from nav_msgs.srv import GetPlan
 from sound_play.libsoundplay import SoundClient
 from task1.srv import Normal_vector
 
+PARKING_NUM = 250
+
 
 class State(Enum):
     IDLE = 0
@@ -127,6 +129,10 @@ class MovementNode:
 
         self.found_cylinders = False
         self.parking_pose = None
+        self.parking_num = 0
+        self.serving_pose = None
+        self.serve_num = 0
+        self.food_or_name = ""
 
         rospy.wait_for_service("normal_vector")
         self.vector_service = rospy.ServiceProxy("normal_vector", Normal_vector)
@@ -156,26 +162,27 @@ class MovementNode:
     def circle_callback(self, msg):
         if self.state != State.EXPLORING:
             return
-        
+
         rospy.loginfo("Found all circles")
         self.parking_pose = msg.position
+        print(":::", self.parking_pose)
+        self.circle_sub.unregister()
 
         if self.found_cylinders:
+            self.cylinder_sub.unregister()
             self.initiate_park()
-
-        # self.circle_sub.unregister()
 
     def cylinder_callback(self, msg):
         if self.state != State.EXPLORING:
             return
-        
+
         rospy.loginfo("Found all cylinders")
         self.found_cylinders = True
+        self.cylinder_sub.unregister()
 
         if self.parking_pose:
+            self.circle_sub.unregister()
             self.initiate_park()
-
-        # self.cylinder_sub.unregister()
 
     def qr_callback(self, msg):
         if self.state == State.SCANNING:
@@ -192,19 +199,13 @@ class MovementNode:
                 self.final_names.append(temp_name)
                 self.final_food.append(temp_food)
 
-            self.state = State.SERVING
+            print(self.final_names, self.final_food)
 
-            for name, food in zip(self.final_names, self.final_food):
-                # Find food and face, else continue
-                face_index = np.where(self.faces[:, 0] == name)[0]
-                if not len(face_index):
-                    face_index = face_index[0]
-                    rospy.loginfo("Serving %s" % name)
-                    self.publish_specific_goal(
-                        Goal_Pose(
-                            self.faces[face_index, 1], self.faces[face_index, 2], 0, 1
-                        )
-                    )
+            self.state = State.SERVING
+            self.serve_num = 0
+
+            # TODO: call serveFood
+            self.serveFace_callback()
 
             # Goal_Pose(x, y, rot_z, rot_w)
             # TODO:
@@ -214,10 +215,37 @@ class MovementNode:
             # 2. Send robot to each location
             # 3. When robot delivers the food, let him say the customers name and start sound recognition
 
+    # TODO: serveFood
+
+    def serveFace_callback(self):
+        print("::: 1")
+        if len(self.final_names) <= self.serve_num:
+            return
+
+        print("::: 2")
+        # Find face else continue
+        name = self.final_names[self.serve_num]
+        face_index = np.where(self.faces[:, 0] == name)[0]
+        if len(face_index):
+            face_index = face_index[0]
+            rospy.loginfo("Serving %s" % name)
+            self.food_or_name = name
+            self.serving_pose = Goal_Pose(
+                x=float(self.faces[face_index, 1]),
+                y=float(self.faces[face_index, 2]),
+                rot_z=0.0,
+                rot_w=1.0,
+            )
+            self.find_face()
+
+        print("::: 3")
+        self.serve_num += 1
+        # TODO: talk + call serveFood
+
     def faces_callback(self, msg):
-        # if self.state != State.EXPLORING:
-        #     return
-        
+        if self.state != State.EXPLORING and self.state != State.PARKING:
+            return
+
         markers = msg.markers
         self.faces = []
         for marker in markers:
@@ -228,9 +256,26 @@ class MovementNode:
         print("Faces:", self.faces)
         self.faces = np.asarray(self.faces)
 
+    def find_face(self):
+        self.goal_client.cancel_all_goals()
+        angle = self.vector_service(self.serving_pose.x, self.serving_pose.y).angle
+
+        x_diff = np.cos(angle)
+        y_diff = np.sin(-angle)
+        yaw = angle + np.pi
+
+        target_x = self.serving_pose.x + x_diff * 0.5
+        target_y = self.serving_pose.y + y_diff * 0.5
+
+        quat = quaternion_from_euler(0, 0, yaw)
+
+        target = Goal_Pose(x=target_x, y=target_y, rot_z=quat[2], rot_w=quat[3])
+        self.goal_client.send_goal(target.to_base_goal(), done_cb=self.done_callback)
+
     def initiate_park(self):
         self.goal_client.cancel_all_goals()
         self.state = State.GOTO_PARKING
+        self.parking_num = 0
 
         angle = self.vector_service(self.parking_pose.x, self.parking_pose.y).angle
 
@@ -325,8 +370,6 @@ class MovementNode:
         circle = circles[0][0]
         center = image.shape[1] // 2
 
-        print(circle)
-
         twist = Twist()
         twist.linear.x = 0
         twist.linear.y = 0
@@ -337,20 +380,26 @@ class MovementNode:
 
         center_margin = 30
         forward_margin = 30
-        if circle[0] - center > center_margin:
-            print("Turning right")
+        if circle[0] - center > center_margin and self.parking_num < PARKING_NUM:
+            print(self.parking_num, "- Turning right", circle)
             twist.angular.z = -1
-        elif circle[0] - center < -center_margin:
-            print("Turning left")
+        elif circle[0] - center < -center_margin and self.parking_num < PARKING_NUM:
+            print(self.parking_num, "- Turning left", circle)
             twist.angular.z = 1
-        elif circle[1] < image.shape[0] - forward_margin:
-            print("Moving forward")
+        elif (
+            circle[1] < image.shape[0] - forward_margin
+            and self.parking_num < PARKING_NUM
+        ):
+            print(self.parking_num, "- Moving forward", circle)
             twist.linear.x = 0.15
         else:
             # self.soundhandle.say("Time to self destruct", self.voice, self.volume)
+            print(self.parking_num, "- Moving backward", circle)
             self.state = State.SCANNING
+            twist.linear.x = -0.50
             # self.arm_controller_pub.publish("self_destruct")
 
+        self.parking_num += 1
         self.publish_twist.publish(twist)
 
     def check_plan(self, start, goal):
@@ -502,6 +551,14 @@ class MovementNode:
                 self.arm_controller_pub.publish("park")
                 rospy.sleep(2)
                 self.park()
+
+        if self.state == State.SERVING:
+            if status == 3:
+                self.soundhandle.say(
+                    "Hello %s! Here is your food." % self.food_or_name, self.voice, self.volume
+                )
+                rospy.sleep(2)
+                self.serveFace_callback()
 
     def command_callback(self, msg):
         command = msg.data
