@@ -212,6 +212,8 @@ class food_localizer:
         # Fit contour to image and recognise food inside
         contours, hierarchy = cv2.findContours(edge, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
+        print('Found {} contours'.format(len(contours)))
+
         # Track maximum and return only best match
         # Set best_confidence to min treshold
         best_confidence = 1
@@ -219,11 +221,15 @@ class food_localizer:
 
         # Detect food in each region separately
         for contour in contours:
-            # Filter contours by circularity
+            # Filter contours by area and circularity
             area = cv2.contourArea(contour)
+            if area < 10:  # TODO adjust treshold
+                print('Area too small ({})'.format(area))
+                continue
             arclength = cv2.arcLength(contour, True)
             circularity = 4 * 3.14159 * area / (arclength * arclength)
             if circularity < 0.6:  # TODO adjust treshold
+                print('Circularity too low ({})'.format(circularity))
                 continue
             # Find bounding rectangle, (x, y) is top left
             x, y, w, h = cv2.boundingRect(contour)
@@ -234,11 +240,12 @@ class food_localizer:
             if confidence > best_confidence:
                 best_guess, best_confidence, best_contour = food_name, confidence, contour
 
-        print(best_guess)
-
         # Break if no food detected
         if not best_contour:
+            print('No food detected')
             return
+
+        print('Best guess:', best_guess)
 
         # Calculate the position of the detected food
         x, y, w, h = cv2.boundingRect(best_contour)
