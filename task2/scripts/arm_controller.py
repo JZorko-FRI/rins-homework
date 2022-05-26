@@ -56,11 +56,13 @@ class ArmController:
         self.pub.publish(trajectory)
 
     def command_callback(self, msg):
+        print("TUKAJ")
         rospy.loginfo("Received command: %s", msg.data)
         if msg.data == "setup_scanner":
+            self.scanner_angles = [0, -2, 2.6, -0.5]
             self.setup_scanner_pos()
         if msg.data == "still_scanner":
-            self.scanner_angles[0] = 0
+            self.scanner_angles = [0, -2, 2.6, -0.5]
             self.set_position(self.scanner_angles)
             self.state = State.IDLE
         elif msg.data == "park":
@@ -70,16 +72,19 @@ class ArmController:
             self.set_position(self.self_destruct)
             self.state = State.IDLE
         elif msg.data == "move_left":
-            self.scanner_angles[0] = self.max_angle / 2
+            self.scanner_angles = [self.max_angle / 2, -2, 2.6, -0.5]
             self.set_position(self.scanner_angles)
             self.state = State.IDLE
         elif msg.data == "move_right":
-            self.scanner_angles[0] = -self.max_angle / 2
+            self.scanner_angles = [-self.max_angle / 2, -2, 2.6, -0.5]
+            self.set_position(self.scanner_angles)
+            self.state = State.IDLE
+        elif msg.data == "food_detection":
+            self.scanner_angles = [0, 0.3, 1, -0.5]
             self.set_position(self.scanner_angles)
             self.state = State.IDLE
 
     def setup_scanner_pos(self):
-        self.scanner_angles[0] = 0
         self.set_position(self.scanner_angles)
         self.state = State.ROTATING
 

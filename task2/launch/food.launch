@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="task2" type="food.py" name="food" output="screen"/>
+</launch>

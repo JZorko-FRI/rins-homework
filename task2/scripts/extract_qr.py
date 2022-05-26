@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from sklearn.exceptions import DataDimensionalityWarning
 import roslib
 
 # roslib.load_manifest('exercise4')
@@ -57,9 +58,12 @@ class QRExtractor:
             cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:
             print(e)
-
-            # Find a QR code in the image
+            
+        # Find a QR code in the image
         decodedObjects = pyzbar.decode(cv_image)
+        
+        decoder = cv2.QRCodeDetector()  
+        data, points, _ = decoder.detectAndDecode(cv_image)
 
         # print(decodedObjects)
 
@@ -77,17 +81,22 @@ class QRExtractor:
             # else :
             #     hull = points;
 
-            ## Number of points in the convex hull
+            # # Number of points in the convex hull
             # n = len(hull)
 
-            ## Draw the convext hull
+            # # Draw the convext hull
             # for j in range(0,n):
-            # cv2.line(cv_image, hull[j], hull[ (j+1) % n], (0,255,0), 2)
+            #     cv2.line(cv_image, hull[j], hull[ (j+1) % n], (0,255,0), 2)
 
             # cv2.imshow('Warped image',cv_image)
             # cv2.waitKey(1)
-
-        elif len(decodedObjects) == 0:
+            
+        elif points is not None:
+            print("Found 1 QR code in the image!")
+            print("Data: ", data, "\n")
+            self.qr_pub.publish(data)
+            
+        elif len(decodedObjects) == 0 and points is None:
             print("No QR code in the image")
         else:
             print("Found more than 1 QR code")

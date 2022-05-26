@@ -161,6 +161,15 @@ class MovementNode:
                 ["Gargamel", -0.161, 2.721, 0.701, 0.713],
             ]
         )
+        # self.faces = np.asarray(
+        #     [
+        #         ["Gargamel", 1.237, 2.720, 0.711, 0.703],
+        #         ["Mateja", -1.555, 1.595, 0.999, 0.012],
+        #         ["Nina", -0.275, -1.514, -0.726, 0.688],
+        #         ["Irena", 3.694, -0.746, 0.136, 0.991],
+        #         ["Ana", 0.017, -0.147, -0.019, 0.999],
+        #     ]
+        # )
         self.face_sub = rospy.Subscriber(
             "/face_markers", MarkerArray, self.faces_callback
         )
@@ -175,6 +184,15 @@ class MovementNode:
                 ["green", "pizza", 1.222, 2.547, 0.704, 0.710],
             ]
         )
+        # self.food = np.asarray(
+        #     [
+        #         ["red", "torta", -1.248, -0.146, -0.705, 0.709],
+        #         ["yellow", "solata", 2.048, -1.478, -0.697, 0.717],
+        #         ["blue", "pomfri", 1.142, -0.175, -0.706, 0.708],
+        #         ["green", "pizza", 2.051, 2.554, 0.705, 0.709],
+        #     ]
+        # )
+        self.temp_detected_food = ""
 
         # ASR
         rospy.wait_for_service("automated_speech_recognition")
@@ -225,9 +243,11 @@ class MovementNode:
         marker_color = msg.text
         food_index = np.where(self.food[:, 0] == marker_color)[0]
         if len(food_index):
-            print(":::", self.food[food_index])
-
             food_index = food_index[0]
+            
+            print(":::", self.food[food_index])
+            self.temp_detected_food = self.food[food_index, 1]
+            
             self.cylinder_pose = Goal_Pose(
                 x=float(self.food[food_index, 2]),
                 y=float(self.food[food_index, 3]),
@@ -240,8 +260,7 @@ class MovementNode:
         self.goal_client.cancel_all_goals()
         self.goal_client.cancel_goal()
         self.state = State.CYLINDER
-        self.arm_controller_pub.publish("still_scanner")
-        
+        self.arm_controller_pub.publish("food_detection")
 
         self.goal_client.send_goal(
             self.cylinder_pose.to_base_goal(), done_cb=self.done_callback
@@ -688,8 +707,8 @@ class MovementNode:
         if self.state == State.CYLINDER:
             if status == 3:
                 # TODO: recognize food
-                print("Recognize food")
-                rospy.sleep(3)
+                print("Recognize food: %s" % self.temp_detected_food)
+                rospy.sleep(1)
             self.state = State.EXPLORING
             self.arm_controller_pub.publish("setup_scanner")
             self.publish_goal()

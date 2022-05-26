@@ -175,6 +175,13 @@ class CluserDatabase:
                         ),
                     )
                 )
+                # self.task_pub.publish(
+                #     Pose(
+                #         position=Point(
+                #             2.0654066739753336, 1.5000801938774344, 0.4362468944061752
+                #         ),
+                #     )
+                # )
 
             self.publshed = True
 
