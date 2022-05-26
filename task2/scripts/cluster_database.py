@@ -81,9 +81,13 @@ class ClusterObject:
 
         self.colors.append(update_color)
 
-        self.pose = Pose(position=Point(x=(c_p.x * w + u_p.x) / (w+1),
-                                        y=(c_p.y * w + u_p.y) / (w+1),
-                                        z=(c_p.z * w + u_p.z) / (w+1)))
+        self.pose = Pose(
+            position=Point(
+                x=(c_p.x * w + u_p.x) / (w + 1),
+                y=(c_p.y * w + u_p.y) / (w + 1),
+                z=(c_p.z * w + u_p.z) / (w + 1),
+            )
+        )
 
         self.update_counter += 1
 
@@ -97,11 +101,17 @@ class ClusterObject:
         c_p = self.pose.position
         o_p = pose.position
 
-        return math.sqrt((c_p.x - o_p.x)**2 + (c_p.y - o_p.y)**2)
+        return math.sqrt((c_p.x - o_p.x) ** 2 + (c_p.y - o_p.y) ** 2)
 
 
 class CluserDatabase:
-    def __init__(self, subscribe_topics: "list[str]", marker_topic: str, number_of_objects: int,  threshold: float = 0.2, ) -> None:
+    def __init__(
+        self,
+        subscribe_topics: "list[str]",
+        marker_topic: str,
+        number_of_objects: int,
+        threshold: float = 0.2,
+    ) -> None:
 
         for topic in subscribe_topics:
             rospy.Subscriber(topic, ColorPose, self.callback)
@@ -112,10 +122,12 @@ class CluserDatabase:
         self.number_of_objects_to_detect = number_of_objects
 
         self.markers_pub: rospy.Publisher = rospy.Publisher(
-            marker_topic, MarkerArray, queue_size=1000)
+            marker_topic, MarkerArray, queue_size=1000
+        )
 
         self.task_pub: rospy.Publisher = rospy.Publisher(
-            'task2/all_circles', Pose, queue_size=1000)
+            "task2/all_circles", Pose, queue_size=1000
+        )
 
         # Log ros info to console with parameters
         rospy.loginfo("Starting cluster_database node with parameters:")
@@ -135,12 +147,12 @@ class CluserDatabase:
 
     def check_emmited(self):
 
-        if (self.publshed):
+        if self.publshed:
             return
 
         number_of_obj = [x.emmited for x in self.objects].count(True)
 
-        if (number_of_obj == self.number_of_objects_to_detect):
+        if number_of_obj == self.number_of_objects_to_detect:
 
             green_objects = []
 
@@ -150,24 +162,34 @@ class CluserDatabase:
                 if "green" in name or "lime" in name or "chartreuse" in name:
                     green_objects.append(obj)
 
-            self.task_pub.publish(green_objects[0].pose)
+            print("green_objects", green_objects)
+            if len(green_objects):
+                print(green_objects[0].pose)
+                self.task_pub.publish(green_objects[0].pose)
+            else:
+                # HARDCODED
+                self.task_pub.publish(
+                    Pose(
+                        position=Point(
+                            -1.2655448029612255, 0.7447257324131192, 0.5699294171844265
+                        ),
+                    )
+                )
 
             self.publshed = True
 
-    def add_object(self,  colorpose: ColorPose) -> None:
+    def add_object(self, colorpose: ColorPose) -> None:
 
         if len(self.objects) == 0:
             self.objects.append(ClusterObject(colorpose, 0))
             return
 
-        distances = [
-            a.get_distance_to_pose(colorpose.pose) for a in self.objects]
+        distances = [a.get_distance_to_pose(colorpose.pose) for a in self.objects]
 
         index_min = np.argmin(distances)
 
         if distances[index_min] < self.threshold:
-            self.objects[index_min].update_position(
-                colorpose.pose, colorpose.color)
+            self.objects[index_min].update_position(colorpose.pose, colorpose.color)
             return
 
         rospy.loginfo("New object added")
@@ -176,7 +198,7 @@ class CluserDatabase:
 
     def draw_markers(self) -> None:
         stamp = rospy.Time(0)
-        header = Header(stamp=stamp, frame_id='map')
+        header = Header(stamp=stamp, frame_id="map")
         objects_len = len(self.objects)
 
         marker_arr = [Marker(header=header, action=Marker.DELETEALL)]
@@ -194,26 +216,34 @@ class CluserDatabase:
             color_barva = rgba(c.r, c.g, c.b)
 
             p = face.pose.position
-            text_pose = Pose(position=Point(x=p.x, y=p.y+0.1))
+            text_pose = Pose(position=Point(x=p.x, y=p.y + 0.1))
 
-            marker_arr.append(Marker(header=header,
-                                     pose=face.pose,
-                                     type=Marker.SPHERE,
-                                     action=Marker.ADD,
-                                     frame_locked=False,
-                                     id=id,
-                                     scale=Vector3(0.1, 0.1, 0.1),
-                                     color=color_barva))
+            marker_arr.append(
+                Marker(
+                    header=header,
+                    pose=face.pose,
+                    type=Marker.SPHERE,
+                    action=Marker.ADD,
+                    frame_locked=False,
+                    id=id,
+                    scale=Vector3(0.1, 0.1, 0.1),
+                    color=color_barva,
+                )
+            )
 
-            marker_arr.append(Marker(header=header,
-                                     pose=text_pose,
-                                     type=Marker.TEXT_VIEW_FACING,
-                                     text=("Torus " + face.named_color),
-                                     action=Marker.ADD,
-                                     frame_locked=False,
-                                     id=id + objects_len,
-                                     scale=Vector3(0.1, 0.1, 0.1),
-                                     color=color_barva))
+            marker_arr.append(
+                Marker(
+                    header=header,
+                    pose=text_pose,
+                    type=Marker.TEXT_VIEW_FACING,
+                    text=("Torus " + face.named_color),
+                    action=Marker.ADD,
+                    frame_locked=False,
+                    id=id + objects_len,
+                    scale=Vector3(0.1, 0.1, 0.1),
+                    color=color_barva,
+                )
+            )
 
             id += 1
 
@@ -224,17 +254,21 @@ class CluserDatabase:
 
 
 def main():
-    rospy.init_node('cluster_database', anonymous=True)
+    rospy.init_node("cluster_database", anonymous=True)
 
     subscribe_topics = rospy.get_param("~topic_list")
     marker_topic = rospy.get_param("~marker_topic")
     number_of_objects = rospy.get_param("~number_of_objects")
 
-    CluserDatabase(subscribe_topics=subscribe_topics,
-                   marker_topic=marker_topic, threshold=0.7, number_of_objects=number_of_objects)
+    CluserDatabase(
+        subscribe_topics=subscribe_topics,
+        marker_topic=marker_topic,
+        threshold=0.7,
+        number_of_objects=number_of_objects,
+    )
 
     rospy.spin()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -20,8 +20,6 @@ from nav_msgs.msg import OccupancyGrid
 from nav_msgs.srv import GetPlan
 from sound_play.libsoundplay import SoundClient
 from task1.srv import Normal_vector
-from task2.srv import speech
-
 
 PARKING_NUM = 250
 
@@ -34,7 +32,6 @@ class State(Enum):
     SCANNING = 4
     SERVING = 5
     CYLINDER = 6
-    SERVING_FOOD = 7
 
 
 @dataclass
@@ -142,7 +139,6 @@ class MovementNode:
         self.serve_num = 0
         self.food_or_name = ""
         self.cylinder_pose = None
-        self.goal_food_client = []
 
         rospy.wait_for_service("normal_vector")
         self.vector_service = rospy.ServiceProxy("normal_vector", Normal_vector)
@@ -150,22 +146,11 @@ class MovementNode:
         self.final_names, self.final_food = [], []
         self.qr_sub = rospy.Subscriber("/qr/data", String, self.qr_callback)
 
-        # HARDCODED
-        # ["name", "x", "y", "z", "w"]
-        self.faces = np.asarray(
-            [
-                ["Ana", 0.098, -0.185, -0.006, 0.999],
-                ["Nina", -0.092, -1.533, -0.700, 0.714],
-                ["Irena", 3.677, -0.798, 0.027, 0.999],
-                ["Mateja", 0.993, 1.143, 0.999, 0.004],
-                ["Gargamel", -0.161, 2.721, 0.701, 0.713],
-            ]
-        )
+        self.faces = []
         self.face_sub = rospy.Subscriber(
             "/face_markers", MarkerArray, self.faces_callback
         )
 
-        # HARDCODED
         # ["color", "food", "x", "y", "z", "w"]
         self.food = np.asarray(
             [
@@ -175,10 +160,6 @@ class MovementNode:
                 ["green", "pizza", 1.222, 2.547, 0.704, 0.710],
             ]
         )
-
-        # ASR
-        rospy.wait_for_service("automated_speech_recognition")
-        self.asr = rospy.ServiceProxy("automated_speech_recognition", speech)
 
         self.state = State.EXPLORING
         # self.arm_controller_pub.publish("park")
@@ -219,14 +200,11 @@ class MovementNode:
             self.initiate_park()
 
     def cylinder_one_callback(self, msg):
-        if self.state != State.EXPLORING:
-            return
-
         marker_color = msg.text
         food_index = np.where(self.food[:, 0] == marker_color)[0]
         if len(food_index):
             print(":::", self.food[food_index])
-
+            
             food_index = food_index[0]
             self.cylinder_pose = Goal_Pose(
                 x=float(self.food[food_index, 2]),
@@ -236,12 +214,11 @@ class MovementNode:
             )
             self.find_cylinder()
 
+        # TODO: hardcodaj cilindre glede na barvo in ko zazna barvo idi do njih in "zaznaj" hrano
+
     def find_cylinder(self):
-        self.goal_client.cancel_all_goals()
-        self.goal_client.cancel_goal()
         self.state = State.CYLINDER
-        self.arm_controller_pub.publish("still_scanner")
-        
+        self.goal_client.cancel_all_goals()
 
         self.goal_client.send_goal(
             self.cylinder_pose.to_base_goal(), done_cb=self.done_callback
@@ -253,7 +230,6 @@ class MovementNode:
             rospy.loginfo("Found QR code: %s" % msg.data)
 
             self.goal_client.cancel_all_goals()
-            self.arm_controller_pub.publish("still_scanner")
 
             codes = msg.data.split(", ")
 
@@ -267,64 +243,26 @@ class MovementNode:
 
             self.state = State.SERVING
             self.serve_num = 0
-            self.goal_food_client = []
 
-            for temp_food, temp_name in zip(self.final_food, self.final_names):
-                food_index = np.where(self.food[:, 1] == temp_food)[0]
-                face_index = np.where(self.faces[:, 0] == temp_name)[0]
+            # TODO: call serveFood
+            self.serveFace_callback()
 
-                if len(food_index) and len(face_index):
-                    food_index = food_index[0]
-                    # rospy.loginfo("Serving %s" % temp_food)
-                    self.food_or_name = temp_food
-                    serving_pose = Goal_Pose(
-                        x=float(self.food[food_index, 2]),
-                        y=float(self.food[food_index, 3]),
-                        rot_z=float(self.food[food_index, 4]),
-                        rot_w=float(self.food[food_index, 5]),
-                    )
-                    self.goal_food_client.append(serving_pose)
+            # Goal_Pose(x, y, rot_z, rot_w)
+            # TODO:
+            # Ko najde vse cilindre jih naj neha iskat + kamera se naj neha sukat okol
+            # V tej tocki closaj vse nepotrebne topice
+            # 1. Find locations of the food and names (self.faces - [name, x, y])
+            # 2. Send robot to each location
+            # 3. When robot delivers the food, let him say the customers name and start sound recognition
 
-                    face_index = face_index[0]
-                    # rospy.loginfo("Serving %s" % temp_name)
-                    self.food_or_name = temp_name
-                    serving_pose = Goal_Pose(
-                        x=float(self.faces[face_index, 1]),
-                        y=float(self.faces[face_index, 2]),
-                        rot_z=float(self.faces[face_index, 3]),
-                        rot_w=float(self.faces[face_index, 4]),
-                    )
-                    self.goal_food_client.append(serving_pose)
-
-            print(self.goal_food_client)
-            self.publish_food_client_goal()
-
-    def serveFood_callback(self):
-        if len(self.final_food) <= self.serve_num or self.state != State.SERVING_FOOD:
-            return
-
-        # Find food else continue
-        food = self.final_food[self.serve_num]
-        food_index = np.where(self.food[:, 1] == food)[0]
-        if len(food_index):
-            food_index = food_index[0]
-            rospy.loginfo("Serving %s" % food)
-            self.food_or_name = food
-            self.serving_pose = Goal_Pose(
-                x=float(self.food[food_index, 2]),
-                y=float(self.food[food_index, 3]),
-                rot_z=float(self.food[food_index, 4]),
-                rot_w=float(self.food[food_index, 5]),
-            )
-            self.find_food()
-        else:
-            self.serve_num += 1
-            self.serveFood_callback()
+    # TODO: serveFood
 
     def serveFace_callback(self):
-        if len(self.final_names) <= self.serve_num or self.state != State.SERVING:
+        print("::: 1")
+        if len(self.final_names) <= self.serve_num:
             return
 
+        print("::: 2")
         # Find face else continue
         name = self.final_names[self.serve_num]
         face_index = np.where(self.faces[:, 0] == name)[0]
@@ -335,44 +273,49 @@ class MovementNode:
             self.serving_pose = Goal_Pose(
                 x=float(self.faces[face_index, 1]),
                 y=float(self.faces[face_index, 2]),
-                rot_z=float(self.faces[face_index, 3]),
-                rot_w=float(self.faces[face_index, 4]),
+                rot_z=0.0,
+                rot_w=1.0,
             )
             self.find_face()
 
+        print("::: 3")
         self.serve_num += 1
+        # TODO: talk + call serveFood
 
     def faces_callback(self, msg):
         if self.state != State.EXPLORING and self.state != State.PARKING:
             return
 
         markers = msg.markers
-        faces = []
+        self.faces = []
         for marker in markers:
             if marker.text:
-                faces.append(
+                self.faces.append(
                     [marker.text, marker.pose.position.x, marker.pose.position.y]
                 )
-        print("Faces:", faces)
-        faces = np.asarray(faces)
-
-    def find_food(self):
-        self.goal_client.cancel_all_goals()
-
-        self.goal_client.send_goal(
-            self.serving_pose.to_base_goal(), done_cb=self.done_callback
-        )
+        print("Faces:", self.faces)
+        self.faces = np.asarray(self.faces)
 
     def find_face(self):
+        print("::: 4")
         self.goal_client.cancel_all_goals()
+        angle = self.vector_service(self.serving_pose.x, self.serving_pose.y).angle
 
-        self.goal_client.send_goal(
-            self.serving_pose.to_base_goal(), done_cb=self.done_callback
-        )
+        x_diff = np.cos(angle)
+        y_diff = np.sin(-angle)
+        yaw = angle + np.pi
+
+        target_x = self.serving_pose.x + x_diff * 0.5
+        target_y = self.serving_pose.y + y_diff * 0.5
+
+        quat = quaternion_from_euler(0, 0, yaw)
+        print("::: 5")
+
+        target = Goal_Pose(x=target_x, y=target_y, rot_z=quat[2], rot_w=quat[3])
+        self.goal_client.send_goal(target.to_base_goal(), done_cb=self.done_callback)
 
     def initiate_park(self):
         self.goal_client.cancel_all_goals()
-        self.goal_client.cancel_goal()
         self.state = State.GOTO_PARKING
         self.parking_num = 0
 
@@ -470,7 +413,7 @@ class MovementNode:
         center = image.shape[1] // 2
 
         twist = Twist()
-        twist.linear.x = 0.15
+        twist.linear.x = 0
         twist.linear.y = 0
         twist.linear.z = 0
         twist.angular.x = 0
@@ -482,13 +425,9 @@ class MovementNode:
         if circle[0] - center > center_margin and self.parking_num < PARKING_NUM:
             print(self.parking_num, "- Turning right", circle)
             twist.angular.z = -1
-            twist.linear.x = 0
-
         elif circle[0] - center < -center_margin and self.parking_num < PARKING_NUM:
             print(self.parking_num, "- Turning left", circle)
             twist.angular.z = 1
-            twist.linear.x = 0
-
         elif (
             circle[1] < image.shape[0] - forward_margin
             and self.parking_num < PARKING_NUM
@@ -627,14 +566,6 @@ class MovementNode:
         rospy.loginfo(f"Sending new goal to {goal.x} {goal.y}!")
         self.goal_client.send_goal(goal.to_base_goal(), done_cb=self.done_callback)
 
-    def publish_food_client_goal(self):
-        if self.state != State.SERVING or self.serve_num >= len(self.goal_food_client):
-            return
-
-        goal = self.goal_food_client[self.serve_num]
-        rospy.loginfo(f"Sending new goal to {goal.x} {goal.y}!")
-        self.goal_client.send_goal(goal.to_base_goal(), done_cb=self.done_callback)
-
     def publish_specific_goal(self, goal):
         if self.state != State.SERVING:
             return
@@ -663,97 +594,23 @@ class MovementNode:
                 rospy.sleep(2)
                 self.park()
 
-        # if self.state == State.SERVING:
-        #     if status == 3:
-        #         self.soundhandle.say(
-        #             "Hello %s! Here is your food." % self.food_or_name,
-        #             self.voice,
-        #             self.volume,
-        #         )
-        #         rospy.sleep(2)
-        #         self.state = State.SERVING_FOOD
-        #         self.serveFood_callback()
-
-        # if self.state == State.SERVING_FOOD:
-        #     if status == 3:
-        #         self.soundhandle.say(
-        #             "Serve %s" % self.food_or_name,
-        #             self.voice,
-        #             self.volume,
-        #         )
-        #         rospy.sleep(2)
-        #         self.state = State.SERVING
-        #         self.serveFace_callback()
+        if self.state == State.SERVING:
+            if status == 3:
+                self.soundhandle.say(
+                    "Hello %s! Here is your food." % self.food_or_name,
+                    self.voice,
+                    self.volume,
+                )
+                print("::: 6")
+                rospy.sleep(2)
+                self.serveFace_callback()
 
         if self.state == State.CYLINDER:
             if status == 3:
                 # TODO: recognize food
                 print("Recognize food")
-                rospy.sleep(3)
-            self.state = State.EXPLORING
-            self.arm_controller_pub.publish("setup_scanner")
-            self.publish_goal()
-
-        if self.state == State.SERVING:
-            if status == 3:
-                if self.serve_num < len(self.goal_food_client):
-                    if self.serve_num % 2 == 0:
-                        # Pick up the food
-                        print("Pick up the food")
-                        print("Serving to %s" % self.final_names[self.serve_num // 2])
-                        self.soundhandle.say(
-                            "Serving to %s" % self.final_names[self.serve_num // 2],
-                            self.voice,
-                            self.volume,
-                        )
-                    else:
-                        # Serve to client
-                        print("Serve to client")
-                        print("Here is your %s" % self.final_food[self.serve_num // 2])
-                        self.rating_scale = {
-                            "one": 1,
-                            "two": 2,
-                            "three": 3,
-                            "four": 4,
-                            "five": 5,
-                            "1": 1,
-                            "2": 2,
-                            "3": 3,
-                            "4": 4,
-                            "5": 5,
-                        }
-
-                        self.asr(
-                            "Here is your %s." % self.final_food[self.serve_num // 2]
-                        )
-                        payment_method = self.asr(
-                            "Will you pay by cash or credit card?"
-                        ).data
-                        payment_method = "CASH" if "cas" in payment_method else "CARD"
-                        print("::: payment method: ", payment_method)
-                        if payment_method == "CASH":
-                            self.arm_controller_pub.publish("move_left")
-                            self.arm_controller_pub.publish("still_scanner")
-                        else:
-                            self.arm_controller_pub.publish("move_right")
-                            self.arm_controller_pub.publish("still_scanner")
-
-                        rating = self.asr(
-                            "How satisfied were you with the service on the scale from 1 to 5?"
-                        ).data
-                        try:
-                            rating = self.rating_scale[rating]
-                        except:
-                            rating = -1
-                        print("::: rating: ", rating)
-                        self.soundhandle.say(
-                            "Thank you and goodbye.",
-                            self.voice,
-                            self.volume,
-                        )
-
-                    self.serve_num += 1
-                    self.publish_food_client_goal()
+                self.state = State.EXPLORING
+                self.publish_goal()
 
     def command_callback(self, msg):
         command = msg.data

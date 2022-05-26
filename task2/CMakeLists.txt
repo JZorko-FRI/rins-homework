@@ -58,6 +58,11 @@ add_message_files(
   ColorPose.msg
 )
 
+add_service_files(
+	FILES
+	speech.srv
+)
+
 generate_messages(
   DEPENDENCIES
   std_msgs
