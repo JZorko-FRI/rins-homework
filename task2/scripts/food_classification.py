@@ -204,6 +204,7 @@ class food_localizer:
         # Tranform image to gayscale
         gray = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2GRAY)
 
+        # TODO adjust tresholds
         thrs1 = 2000
         thrs2 = 4000
         edge = cv2.Canny(gray, thrs1, thrs2, apertureSize=5)
@@ -211,13 +212,19 @@ class food_localizer:
         # Fit contour to image and recognise food inside
         contours, hierarchy = cv2.findContours(edge, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
-        # TODO filter contours by circularity
-
         # Track maximum and return only best match
-        best_guess, best_confidence, best_contour = None, 0, None
+        # Set best_confidence to min treshold
+        best_confidence = 1
+        best_guess, best_contour = None, None
 
         # Detect food in each region separately
         for contour in contours:
+            # Filter contours by circularity
+            area = cv2.contourArea(contour)
+            arclength = cv2.arcLength(contour, True)
+            circularity = 4 * 3.14159 * area / (arclength * arclength)
+            if circularity < 0.6:  # TODO adjust treshold
+                continue
             # Find bounding rectangle, (x, y) is top left
             x, y, w, h = cv2.boundingRect(contour)
             # Extract region of interest
@@ -229,7 +236,7 @@ class food_localizer:
 
         print(best_guess)
 
-        # If food was detected
+        # Break if no food detected
         if not best_contour:
             return
 
