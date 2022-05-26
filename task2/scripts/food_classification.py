@@ -117,13 +117,18 @@ class food_localizer:
 
     def recognise_food(self, img_p):
 
+        # Convert the image to a pytorch tensor
         img = data_transforms['val'](img_p).unsqueeze(0)
         pred = self.model(img)
 
+        # Predict confidence per class
         pred_np = pred.cpu().detach().numpy().squeeze()
+
+        # Get index of most confident class
         class_ind = np.argmax(pred_np)
 
-        return class_dict[class_ind]
+        # Return food name and confidence
+        return class_dict[class_ind], pred_np[class_ind]
 
     def get_pose(self, coords, dist, stamp):
         # Calculate the position of the detected food
@@ -168,15 +173,13 @@ class food_localizer:
 
         # Get the next rgb and depth images that are posted from the camera
         try:
-            rgb_image_message = rospy.wait_for_message("/camera/rgb/image_raw",
-                                                       Image)
+            rgb_image_message = rospy.wait_for_message("/camera/rgb/image_raw", Image)
         except Exception as e:
             print(e)
             return 0
 
         try:
-            depth_image_message = rospy.wait_for_message(
-                "/camera/depth/image_raw", Image)
+            depth_image_message = rospy.wait_for_message("/camera/depth/image_raw", Image)
         except Exception as e:
             print(e)
             return 0
@@ -189,8 +192,7 @@ class food_localizer:
             print(e)
 
         try:
-            depth_image = self.bridge.imgmsg_to_cv2(depth_image_message,
-                                                    "32FC1")
+            depth_image = self.bridge.imgmsg_to_cv2(depth_image_message, "32FC1")
         except CvBridgeError as e:
             print(e)
 
@@ -200,90 +202,78 @@ class food_localizer:
         w = self.dims[1]
 
         # Tranform image to gayscale
-        #gray = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2GRAY)
 
-        # Do histogram equlization
-        #img = cv2.equalizeHist(gray)
+        thrs1 = 2000
+        thrs2 = 4000
+        edge = cv2.Canny(gray, thrs1, thrs2, apertureSize=5)
 
-        # Detect the foods in the image
-        #food_rectangles = self.food_detector(rgb_image, 0)
+        # Fit contour to image and recognise food inside
+        contours, hierarchy = cv2.findContours(edge, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
-        # blob = cv2.dnn.blobFromImage(cv2.resize(rgb_image, (300, 300)), 1.0,
-        #                              (300, 300), (104.0, 177.0, 123.0))
-        # self.food_net.setInput(blob)
+        # TODO filter contours by circularity
 
-        food_detections = self.recognise_food(rgb_image)
+        # Track maximum and return only best match
+        best_guess, best_confidence, best_contour = None, 0, None
 
-        print(food_detections)
+        # Detect food in each region separately
+        for contour in contours:
+            # Find bounding rectangle, (x, y) is top left
+            x, y, w, h = cv2.boundingRect(contour)
+            # Extract region of interest
+            roi = rgb_image[y:y + h, x:x + w]
+            # Detect food in the region
+            food_name, confidence = self.recognise_food(roi)
+            if confidence > best_confidence:
+                best_guess, best_confidence, best_contour = food_name, confidence, contour
 
-        return
+        print(best_guess)
 
-        for i in range(0, food_detections.shape[2]):
-            confidence = food_detections[0, 0, i, 2]
-            if confidence > 0.5:
-                box = food_detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-                box = box.astype('int')
-                x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
+        # If food was detected
+        if not best_contour:
+            return
 
-                # Extract region containing food
-                food_region = rgb_image[y1:y2, x1:x2]
+        # Calculate the position of the detected food
+        x, y, w, h = cv2.boundingRect(best_contour)
+        roi_rgb = rgb_image[y:y + h, x:x + w]
+        # Visualize the extracted food
+        cv2.imshow("ImWindow", roi_rgb)
+        cv2.waitKey(10)
+        # Calculate center of enclosing circle to find distance
+        (x,y), radius = cv2.minEnclosingCircle(best_contour)
+        food_distance = depth_image[int(y), int(x)]
 
-                # Visualize the extracted food
-                cv2.imshow("ImWindow", food_region)
-                cv2.waitKey(10)
+        print('Distance to food', food_distance)
 
-                # Find the distance to the detected food
-                food_distance = float(np.nanmean(depth_image[y1:y2, x1:x2]))
+        # Get the time that the depth image was recieved
+        depth_time = depth_image_message.header.stamp
 
-                print('Distance to food', food_distance)
+        # Find the location of the detected food
+        pose = self.get_pose((x, x+w, y, y+h), food_distance, depth_time)
 
-                # Get the time that the depth image was recieved
-                depth_time = depth_image_message.header.stamp
+        if pose is not None:
+            # Check if pose is valid and if we have already detected it
+            if detected(pose, self.pose_array):
+                # Add pose to detected poses
+                self.pose_array.append(pose)
 
-                # Find the location of the detected food
-                pose = self.get_pose((x1, x2, y1, y2), food_distance,
-                                     depth_time)
+                # Create a marker used for visualization
+                self.marker_num += 1
+                marker = Marker()
+                marker.header.stamp = rospy.Time(0)
+                marker.header.frame_id = 'map'
+                marker.pose = pose
+                marker.type = Marker.TEXT_VIEW_FACING
+                marker.action = Marker.ADD
+                marker.frame_locked = False
+                marker.lifetime = rospy.Duration.from_sec(300)
+                marker.id = self.marker_num
+                marker.scale = Vector3(0.2, 0.2, 0.2)
+                marker.color = ColorRGBA(0, 1, 0, 1)
+                marker.text = best_guess
+                self.marker_array.markers.append(marker)
 
-                if pose is not None:
-                    # Check if pose is valid and if we have already detected it
-                    if detected(pose, self.pose_array):
-                        # Add pose to detected poses
-                        self.pose_array.append(pose)
-
-                        # Create a marker used for visualization
-                        self.marker_num += 1
-                        marker = Marker()
-                        marker.header.stamp = rospy.Time(0)
-                        marker.header.frame_id = 'map'
-                        marker.pose = pose
-                        marker.type = Marker.SPHERE
-                        marker.action = Marker.ADD
-                        marker.frame_locked = False
-                        marker.lifetime = rospy.Duration.from_sec(300)
-                        marker.id = self.marker_num
-                        marker.scale = Vector3(0.2, 0.2, 0.2)
-                        marker.color = ColorRGBA(0, 1, 0, 1)
-                        self.marker_array.markers.append(marker)
-
-                        self.markers_pub.publish(self.marker_array)
-
-                        # Move towards detected food
-                        map_goal = MoveBaseGoal()
-                        map_goal.target_pose.header.frame_id = "map"
-                        map_goal.target_pose.pose.orientation.z = robot_pose.pose.pose.orientation.z
-                        map_goal.target_pose.pose.orientation.w = robot_pose.pose.pose.orientation.w
-                        map_goal.target_pose.pose.position.x = np.mean(
-                            [robot_pose.pose.pose.position.x, pose.position.x])
-                        map_goal.target_pose.pose.position.y = np.mean(
-                            [robot_pose.pose.pose.position.y, pose.position.y])
-                        map_goal.target_pose.header.stamp = rospy.Time()
-                        self.ac.cancel_all_goals()
-                        self.ac.send_goal(map_goal)
-                        self.ac.wait_for_result(rospy.Duration(3))
-
-                        # "Greet" the food
-                        self.soundhandle.playWave(self.sounds_dir +
-                                                  "hey-baby.wav")
+                self.markers_pub.publish(self.marker_array)
 
     def depth_callback(self, data):
 
