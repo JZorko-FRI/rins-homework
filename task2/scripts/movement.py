@@ -150,7 +150,7 @@ class MovementNode:
         self.final_names, self.final_food = [], []
         self.qr_sub = rospy.Subscriber("/qr/data", String, self.qr_callback)
 
-        # HARDCODED
+        # DEBUGGING
         # ["name", "x", "y", "z", "w"]
         self.faces = np.asarray(
             [
@@ -174,7 +174,7 @@ class MovementNode:
             "/face_markers", MarkerArray, self.faces_callback
         )
 
-        # HARDCODED
+        # DEBUGGING
         # ["color", "food", "x", "y", "z", "w"]
         self.food = np.asarray(
             [
@@ -197,6 +197,37 @@ class MovementNode:
         # ASR
         rospy.wait_for_service("automated_speech_recognition")
         self.asr = rospy.ServiceProxy("automated_speech_recognition", speech)
+        
+        # self.asr(
+        #     "Here is your %s." % "pizza"
+        # )
+        # payment_method = self.asr(
+        #     "Will you pay by cash or credit card?"
+        # ).data
+        # payment_method = "CASH" if "cas" in payment_method else "CARD"
+        # print("::: payment method: ", payment_method)
+        # if payment_method == "CASH":
+        #     self.arm_controller_pub.publish("move_left")
+        #     rospy.sleep(1)
+        #     self.arm_controller_pub.publish("still_scanner")
+        # else:
+        #     self.arm_controller_pub.publish("move_right")
+        #     rospy.sleep(1)
+        #     self.arm_controller_pub.publish("still_scanner")
+
+        # rating = self.asr(
+        #     "How satisfied were you with the service on the scale from 1 to 5?"
+        # ).data
+        # try:
+        #     rating = self.rating_scale[rating]
+        # except:
+        #     rating = -1
+        # print("::: rating: ", rating)
+        # self.soundhandle.say(
+        #     "Thank you and goodbye.",
+        #     self.voice,
+        #     self.volume,
+        # )
 
         self.state = State.EXPLORING
         # self.arm_controller_pub.publish("park")

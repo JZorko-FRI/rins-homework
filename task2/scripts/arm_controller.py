@@ -72,11 +72,11 @@ class ArmController:
             self.set_position(self.self_destruct)
             self.state = State.IDLE
         elif msg.data == "move_left":
-            self.scanner_angles = [self.max_angle / 2, -2, 2.6, -0.5]
+            self.scanner_angles[0] = self.max_angle / 2
             self.set_position(self.scanner_angles)
             self.state = State.IDLE
         elif msg.data == "move_right":
-            self.scanner_angles = [-self.max_angle / 2, -2, 2.6, -0.5]
+            self.scanner_angles[0] = -self.max_angle / 2
             self.set_position(self.scanner_angles)
             self.state = State.IDLE
         elif msg.data == "food_detection":

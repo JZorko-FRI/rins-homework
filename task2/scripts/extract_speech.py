@@ -57,6 +57,7 @@ class SpeechTranscriber:
             self.volume,
         )
         rospy.loginfo("R: %s" % request)
+        rospy.sleep(3)
 
         response = self.recognize_speech()
         rospy.loginfo("H: %s" % response)

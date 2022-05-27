@@ -167,7 +167,7 @@ class CluserDatabase:
                 print(green_objects[0].pose)
                 self.task_pub.publish(green_objects[0].pose)
             else:
-                # HARDCODED
+                # DEBUGGING
                 self.task_pub.publish(
                     Pose(
                         position=Point(
